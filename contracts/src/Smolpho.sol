@@ -46,6 +46,7 @@ contract Smolpho {
     event Withdrawn(address indexed user, uint256 assets, uint256 shares);
     event CollateralSupplied(address indexed user, uint256 assets);
     event CollateralWithdrawn(address indexed user, uint256 assets);
+    event Borrowed(address indexed user, uint256 assets, uint256 shares);
 
     error ZeroAddress();
     error ZeroAssets();
@@ -160,6 +161,25 @@ contract Smolpho {
         SafeTransferLib.safeTransfer(collateralToken, msg.sender, assets);
 
         emit CollateralWithdrawn(msg.sender, assets);
+    }
+
+    function borrow(uint256 assets) external nonReentrant returns (uint256 shares) {
+        if (assets == 0) revert ZeroAssets();
+        if (assets > MAX_ASSETS) revert AmountTooLarge();
+
+        accrueInterest();
+        shares = SharesMath.toSharesUp(assets, market.totalBorrowAssets, market.totalBorrowShares);
+
+        position[msg.sender].borrowShares = _toShares(uint256(position[msg.sender].borrowShares) + shares);
+        market.totalBorrowShares = _toShares(uint256(market.totalBorrowShares) + shares);
+        market.totalBorrowAssets = _toAssets(uint256(market.totalBorrowAssets) + assets);
+
+        if (!_isHealthy(msg.sender)) revert UnhealthyPosition();
+        if (market.totalBorrowAssets > market.totalSupplyAssets) revert InsufficientLiquidity();
+
+        SafeTransferLib.safeTransfer(loanToken, msg.sender, assets);
+
+        emit Borrowed(msg.sender, assets, shares);
     }
 
     function withdraw(uint256 shares) external nonReentrant returns (uint256 assets) {
