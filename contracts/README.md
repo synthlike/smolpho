@@ -1,66 +1,57 @@
-## Foundry
+# Smolpho contracts
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Smolpho is a minimal, educational lending protocol inspired by Morpho Blue. One `Smolpho` deployment represents one immutable isolated market with a loan token, collateral token, oracle, LLTV, fixed interest rate, and liquidation incentive.
 
-Foundry consists of:
+It is not intended for production use.
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Features
 
-## Documentation
+- supply and withdrawal using supply shares;
+- direct collateral supply and withdrawal;
+- oracle-based borrower health checks;
+- collateralized borrowing and share-based repayment;
+- lazy fixed-rate interest accrual;
+- incentivized liquidation;
+- bad-debt socialization across suppliers;
+- virtual assets and shares with conservative rounding;
+- bounded accounting types, safe token transfers, and reentrancy protection.
 
-https://book.getfoundry.sh/
+## Layout
 
-## Usage
-
-### Build
-
-```shell
-$ forge build
+```text
+src/Smolpho.sol                  Main isolated lending market
+src/interfaces/                  Token and oracle interfaces
+src/libraries/SharesMath.sol     Asset/share conversions
+src/libraries/SafeTransferLib.sol Safe ERC-20 calls
+test/                            Deterministic, fuzz, and mock-token tests
 ```
 
-### Test
+## Commands
 
-```shell
-$ forge test
+Run from this directory:
+
+```sh
+forge build --skip test
+forge test
+forge fmt --check
 ```
 
-### Format
+Or run the repository-level tasks:
 
-```shell
-$ forge fmt
+```sh
+task contracts:build
+task contracts:test
+task build
 ```
 
-### Gas Snapshots
+## TODO - tests
 
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+- [ ] Verify direct loan-token donations do not change accounting exchange rates.
+- [ ] Demonstrate that fee-on-transfer token accounting is explicitly unsupported.
+- [ ] Invariant: user supply shares sum to total supply shares.
+- [ ] Invariant: user borrow shares sum to total borrow shares.
+- [ ] Invariant: total borrow assets never exceed total supply assets.
+- [ ] Invariant: successful borrowing and collateral withdrawal leave positions healthy.
+- [ ] Fuzz that liquidation never seizes more than borrower collateral.
+- [ ] Fuzz that bad-debt realization never increases supplier claims.
+- [ ] Add a stateful handler covering supply, withdrawal, collateral, borrowing, repayment, price changes, liquidation, and bad debt.
