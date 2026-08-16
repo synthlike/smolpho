@@ -1,6 +1,6 @@
-# Smolpho Lens
+# Smolpho Web
 
-Smolpho Lens is the read-only React interface for the Smolpho indexer API. It
+Smolpho Web is the read-only React interface for the Smolpho indexer API. It
 shows market totals and the published, paginated list of indexed positions.
 
 ## Development

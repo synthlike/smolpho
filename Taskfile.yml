@@ -107,13 +107,13 @@ tasks:
       - npm ci
 
   web:dev:
-    desc: Start the Smolpho Lens development server
+    desc: Start the Smolpho Web development server
     dir: web
     cmds:
       - npm run dev
 
   web:build:
-    desc: Type-check and build the Smolpho Lens frontend
+    desc: Type-check and build the Smolpho Web frontend
     dir: web
     cmds:
       - npm run build

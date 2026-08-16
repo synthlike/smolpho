@@ -38,7 +38,7 @@ task test
 
 The local demo deploys Smolpho to a deterministic Anvil chain, indexes its
 events into SQLite, and displays the resulting market and positions in Smolpho
-Lens. Run the following commands from the repository root in four terminals.
+Web. Run the following commands from the repository root in four terminals.
 
 Terminal 1 — start a fresh local chain:
 
