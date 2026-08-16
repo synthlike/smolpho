@@ -52,3 +52,11 @@ contract FalseReturnERC20 is MockERC20 {
         return false;
     }
 }
+
+contract FalseTransferERC20 is MockERC20 {
+    constructor() MockERC20("False Transfer", "FALSE") {}
+
+    function transfer(address, uint256) external pure override returns (bool) {
+        return false;
+    }
+}

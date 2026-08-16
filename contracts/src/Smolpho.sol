@@ -39,9 +39,13 @@ contract Smolpho {
 
     event InterestAccrued(uint256 elapsed, uint256 interest);
     event Supplied(address indexed user, uint256 assets, uint256 shares);
+    event Withdrawn(address indexed user, uint256 assets, uint256 shares);
 
     error ZeroAddress();
     error ZeroAssets();
+    error ZeroShares();
+    error InsufficientSupplyShares();
+    error InsufficientLiquidity();
     error Reentrancy();
     error SameToken();
     error InvalidLltv();
@@ -109,8 +113,30 @@ contract Smolpho {
         emit Supplied(msg.sender, assets, shares);
     }
 
+    function withdraw(uint256 shares) external nonReentrant returns (uint256 assets) {
+        if (shares == 0) revert ZeroShares();
+        if (shares > position[msg.sender].supplyShares) revert InsufficientSupplyShares();
+
+        accrueInterest();
+        assets = SharesMath.toAssetsDown(shares, market.totalSupplyAssets, market.totalSupplyShares);
+
+        if (assets > market.totalSupplyAssets - market.totalBorrowAssets) revert InsufficientLiquidity();
+
+        position[msg.sender].supplyShares -= shares;
+        market.totalSupplyShares -= shares;
+        market.totalSupplyAssets -= assets;
+
+        SafeTransferLib.safeTransfer(loanToken, msg.sender, assets);
+
+        emit Withdrawn(msg.sender, assets, shares);
+    }
+
     function supplyAssets(address user) external view returns (uint256) {
         return SharesMath.toAssetsDown(position[user].supplyShares, market.totalSupplyAssets, market.totalSupplyShares);
+    }
+
+    function availableLiquidity() external view returns (uint256) {
+        return market.totalSupplyAssets - market.totalBorrowAssets;
     }
 
     function previewSupply(uint256 assets) external view returns (uint256) {
