@@ -15,16 +15,16 @@ contract SmolphoWithdrawHarness is Smolpho {
     {}
 
     function setBorrowTotals(uint256 totalBorrowAssets, uint256 totalBorrowShares) external {
-        market.totalBorrowAssets = totalBorrowAssets;
-        market.totalBorrowShares = totalBorrowShares;
+        market.totalBorrowAssets = uint128(totalBorrowAssets);
+        market.totalBorrowShares = uint128(totalBorrowShares);
     }
 
     function setSupplyPosition(address user, uint256 totalSupplyAssets, uint256 totalSupplyShares, uint256 userShares)
         external
     {
-        market.totalSupplyAssets = totalSupplyAssets;
-        market.totalSupplyShares = totalSupplyShares;
-        position[user].supplyShares = userShares;
+        market.totalSupplyAssets = uint128(totalSupplyAssets);
+        market.totalSupplyShares = uint128(totalSupplyShares);
+        position[user].supplyShares = uint128(userShares);
     }
 }
 

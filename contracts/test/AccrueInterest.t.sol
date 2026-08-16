@@ -26,11 +26,11 @@ contract SmolphoInterestHarness is Smolpho {
         uint256 lastUpdate
     ) external {
         market = Market({
-            totalSupplyAssets: totalSupplyAssets,
-            totalSupplyShares: totalSupplyShares,
-            totalBorrowAssets: totalBorrowAssets,
-            totalBorrowShares: totalBorrowShares,
-            lastUpdate: lastUpdate
+            totalSupplyAssets: uint128(totalSupplyAssets),
+            totalSupplyShares: uint128(totalSupplyShares),
+            totalBorrowAssets: uint128(totalBorrowAssets),
+            totalBorrowShares: uint128(totalBorrowShares),
+            lastUpdate: uint64(lastUpdate)
         });
     }
 }
@@ -113,7 +113,7 @@ contract AccrueInterestTest is Test {
 
     function testFuzz_InterestNeverDecreasesTotals(uint256 borrowAssets, uint256 rate, uint256 elapsed) public {
         borrowAssets = bound(borrowAssets, 0, 1e30);
-        rate = bound(rate, 0, 1e20);
+        rate = bound(rate, 0, type(uint64).max);
         elapsed = bound(elapsed, 0, 1e6);
 
         SmolphoInterestHarness fuzzMarket = new SmolphoInterestHarness(rate);

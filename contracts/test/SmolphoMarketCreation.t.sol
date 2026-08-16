@@ -52,6 +52,23 @@ contract SmolphoMarketCreationTest is Test {
         assertEq(smolpho.ratePerSecond(), 0);
     }
 
+    function test_AllowsMaximumUint64InterestRate() public {
+        Smolpho smolpho = _deploy(LLTV, type(uint64).max, LIQUIDATION_INCENTIVE);
+        assertEq(smolpho.ratePerSecond(), type(uint64).max);
+    }
+
+    function test_RevertsWhenInterestRateExceedsUint64() public {
+        vm.expectRevert(Smolpho.RateTooLarge.selector);
+        _deploy(LLTV, uint256(type(uint64).max) + 1, LIQUIDATION_INCENTIVE);
+    }
+
+    function test_RevertsWhenTimestampExceedsUint64() public {
+        vm.warp(uint256(type(uint64).max) + 1);
+
+        vm.expectRevert(Smolpho.TimestampTooLarge.selector);
+        _deploy(LLTV, RATE_PER_SECOND, LIQUIDATION_INCENTIVE);
+    }
+
     function test_RevertsForZeroLoanToken() public {
         vm.expectRevert(Smolpho.ZeroAddress.selector);
         new Smolpho(IERC20(address(0)), COLLATERAL_TOKEN, ORACLE, LLTV, RATE_PER_SECOND, LIQUIDATION_INCENTIVE);

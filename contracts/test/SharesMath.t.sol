@@ -36,10 +36,10 @@ contract SmolphoPreviewHarness is Smolpho {
         uint256 totalBorrowAssets,
         uint256 totalBorrowShares
     ) external {
-        market.totalSupplyAssets = totalSupplyAssets;
-        market.totalSupplyShares = totalSupplyShares;
-        market.totalBorrowAssets = totalBorrowAssets;
-        market.totalBorrowShares = totalBorrowShares;
+        market.totalSupplyAssets = uint128(totalSupplyAssets);
+        market.totalSupplyShares = uint128(totalSupplyShares);
+        market.totalBorrowAssets = uint128(totalBorrowAssets);
+        market.totalBorrowShares = uint128(totalBorrowShares);
     }
 }
 

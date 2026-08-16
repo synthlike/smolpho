@@ -11,25 +11,29 @@ contract Smolpho {
     uint256 public constant VIRTUAL_ASSETS = 1;
     uint256 public constant VIRTUAL_SHARES = 1e6;
 
+    // Reserve virtual-value headroom so bounded operands can be safely multiplied as uint256.
+    uint256 internal constant MAX_ASSETS = type(uint128).max - VIRTUAL_ASSETS;
+    uint256 internal constant MAX_SHARES = type(uint128).max - VIRTUAL_SHARES;
+
     IERC20 public immutable loanToken;
     IERC20 public immutable collateralToken;
     IPriceOracle public immutable oracle;
     uint256 public immutable lltv;
-    uint256 public immutable ratePerSecond;
+    uint64 public immutable ratePerSecond;
     uint256 public immutable liquidationIncentive;
 
     struct Market {
-        uint256 totalSupplyAssets;
-        uint256 totalSupplyShares;
-        uint256 totalBorrowAssets;
-        uint256 totalBorrowShares;
-        uint256 lastUpdate;
+        uint128 totalSupplyAssets;
+        uint128 totalSupplyShares;
+        uint128 totalBorrowAssets;
+        uint128 totalBorrowShares;
+        uint64 lastUpdate;
     }
 
     struct Position {
-        uint256 supplyShares;
-        uint256 borrowShares;
-        uint256 collateral;
+        uint128 supplyShares;
+        uint128 borrowShares;
+        uint128 collateral;
     }
 
     Market public market;
@@ -51,6 +55,9 @@ contract Smolpho {
     error SameToken();
     error InvalidLltv();
     error InvalidLiquidationIncentive();
+    error AmountTooLarge();
+    error RateTooLarge();
+    error TimestampTooLarge();
 
     modifier nonReentrant() {
         if (locked != 1) revert Reentrancy();
@@ -79,22 +86,27 @@ contract Smolpho {
             revert InvalidLiquidationIncentive();
         }
 
+        if (ratePerSecond_ > type(uint64).max) revert RateTooLarge();
+        if (block.timestamp > type(uint64).max) revert TimestampTooLarge();
+
         loanToken = loanToken_;
         collateralToken = collateralToken_;
         oracle = oracle_;
         lltv = lltv_;
-        ratePerSecond = ratePerSecond_;
+        ratePerSecond = uint64(ratePerSecond_);
         liquidationIncentive = liquidationIncentive_;
-        market.lastUpdate = block.timestamp;
+        market.lastUpdate = uint64(block.timestamp);
     }
 
     function accrueInterest() public returns (uint256 interest) {
-        uint256 elapsed = block.timestamp - market.lastUpdate;
-        interest = market.totalBorrowAssets * ratePerSecond * elapsed / WAD;
+        if (block.timestamp > type(uint64).max) revert TimestampTooLarge();
 
-        market.totalBorrowAssets += interest;
-        market.totalSupplyAssets += interest;
-        market.lastUpdate = block.timestamp;
+        uint256 elapsed = block.timestamp - market.lastUpdate;
+        interest = uint256(market.totalBorrowAssets) * uint256(ratePerSecond) * elapsed / WAD;
+
+        market.totalBorrowAssets = _toAssets(uint256(market.totalBorrowAssets) + interest);
+        market.totalSupplyAssets = _toAssets(uint256(market.totalSupplyAssets) + interest);
+        market.lastUpdate = uint64(block.timestamp);
 
         emit InterestAccrued(elapsed, interest);
     }
@@ -102,12 +114,14 @@ contract Smolpho {
     function supply(uint256 assets) external nonReentrant returns (uint256 shares) {
         if (assets == 0) revert ZeroAssets();
 
+        if (assets > MAX_ASSETS) revert AmountTooLarge();
+
         accrueInterest();
         shares = SharesMath.toSharesDown(assets, market.totalSupplyAssets, market.totalSupplyShares);
 
-        position[msg.sender].supplyShares += shares;
-        market.totalSupplyShares += shares;
-        market.totalSupplyAssets += assets;
+        position[msg.sender].supplyShares = _toShares(uint256(position[msg.sender].supplyShares) + shares);
+        market.totalSupplyShares = _toShares(uint256(market.totalSupplyShares) + shares);
+        market.totalSupplyAssets = _toAssets(uint256(market.totalSupplyAssets) + assets);
 
         SafeTransferLib.safeTransferFrom(loanToken, msg.sender, address(this), assets);
 
@@ -117,7 +131,7 @@ contract Smolpho {
     function supplyCollateral(uint256 assets) external nonReentrant {
         if (assets == 0) revert ZeroAssets();
 
-        position[msg.sender].collateral += assets;
+        position[msg.sender].collateral = _toUint128(uint256(position[msg.sender].collateral) + assets);
 
         SafeTransferLib.safeTransferFrom(collateralToken, msg.sender, address(this), assets);
 
@@ -133,9 +147,9 @@ contract Smolpho {
 
         if (assets > market.totalSupplyAssets - market.totalBorrowAssets) revert InsufficientLiquidity();
 
-        position[msg.sender].supplyShares -= shares;
-        market.totalSupplyShares -= shares;
-        market.totalSupplyAssets -= assets;
+        position[msg.sender].supplyShares -= uint128(shares);
+        market.totalSupplyShares -= uint128(shares);
+        market.totalSupplyAssets -= uint128(assets);
 
         SafeTransferLib.safeTransfer(loanToken, msg.sender, assets);
 
@@ -164,5 +178,20 @@ contract Smolpho {
 
     function previewRepay(uint256 shares) external view returns (uint256) {
         return SharesMath.toAssetsUp(shares, market.totalBorrowAssets, market.totalBorrowShares);
+    }
+
+    function _toAssets(uint256 value) internal pure returns (uint128) {
+        if (value > MAX_ASSETS) revert AmountTooLarge();
+        return uint128(value);
+    }
+
+    function _toShares(uint256 value) internal pure returns (uint128) {
+        if (value > MAX_SHARES) revert AmountTooLarge();
+        return uint128(value);
+    }
+
+    function _toUint128(uint256 value) internal pure returns (uint128) {
+        if (value > type(uint128).max) revert AmountTooLarge();
+        return uint128(value);
     }
 }

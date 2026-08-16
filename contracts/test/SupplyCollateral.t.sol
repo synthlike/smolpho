@@ -111,6 +111,12 @@ contract SupplyCollateralTest is Test {
         smolpho.supplyCollateral(0);
     }
 
+    function test_RevertsWhenCollateralExceedsStorageBound() public {
+        vm.expectRevert(Smolpho.AmountTooLarge.selector);
+        vm.prank(ALICE);
+        smolpho.supplyCollateral(uint256(type(uint128).max) + 1);
+    }
+
     function test_TransferFailureRollsBackCollateralAccounting() public {
         vm.prank(ALICE);
         collateralToken.approve(address(smolpho), 0);

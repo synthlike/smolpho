@@ -22,11 +22,11 @@ contract SmolphoSupplyHarness is Smolpho {
         uint256 lastUpdate
     ) external {
         market = Market({
-            totalSupplyAssets: totalSupplyAssets,
-            totalSupplyShares: totalSupplyShares,
-            totalBorrowAssets: totalBorrowAssets,
-            totalBorrowShares: totalBorrowShares,
-            lastUpdate: lastUpdate
+            totalSupplyAssets: uint128(totalSupplyAssets),
+            totalSupplyShares: uint128(totalSupplyShares),
+            totalBorrowAssets: uint128(totalBorrowAssets),
+            totalBorrowShares: uint128(totalBorrowShares),
+            lastUpdate: uint64(lastUpdate)
         });
     }
 }
@@ -135,6 +135,12 @@ contract SupplyTest is Test {
         vm.expectRevert(Smolpho.ZeroAssets.selector);
         vm.prank(ALICE);
         smolpho.supply(0);
+    }
+
+    function test_RevertsWhenAssetsExceedStorageBound() public {
+        vm.expectRevert(Smolpho.AmountTooLarge.selector);
+        vm.prank(ALICE);
+        smolpho.supply(type(uint128).max);
     }
 
     function test_TransferFailureRollsBackAccounting() public {
