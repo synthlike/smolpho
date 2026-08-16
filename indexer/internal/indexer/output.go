@@ -1,6 +1,7 @@
 package indexer
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"math/big"
@@ -10,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/synthlike/smolpho/indexer/internal/state"
-	"github.com/synthlike/smolpho/indexer/internal/store"
+	"github.com/synthlike/smolpho/indexer/internal/storage"
 )
 
 func addressKey(address common.Address) string {
@@ -18,36 +19,41 @@ func addressKey(address common.Address) string {
 }
 
 // printState renders a snapshot of the reconstructed market and positions.
-func printState(output io.Writer, st *store.Store) {
-	st.Read(func(s *state.State, checkpoint store.Checkpoint) {
-		m := s.Market
-		fmt.Fprintf(output, "\n=== market @ block %d (%s) ===\n", checkpoint.Number, checkpoint.Hash.Hex())
-		fmt.Fprintf(output, "  totalSupplyAssets: %s\n", formatInt(m.TotalSupplyAssets))
-		fmt.Fprintf(output, "  totalSupplyShares: %s\n", formatInt(m.TotalSupplyShares))
-		fmt.Fprintf(output, "  totalBorrowAssets: %s\n", formatInt(m.TotalBorrowAssets))
-		fmt.Fprintf(output, "  totalBorrowShares: %s\n", formatInt(m.TotalBorrowShares))
-		fmt.Fprintf(output, "  lastUpdate: %s\n", formatInt(m.LastUpdate))
-		fmt.Fprintf(output, "  supply share price: %s\n", supplySharePrice(m))
-		if len(s.Positions) == 0 {
-			fmt.Fprintln(output, "  (no positions)")
-			return
-		}
-		fmt.Fprintln(output, "  positions:")
-		users := make([]string, 0, len(s.Positions))
-		for user := range s.Positions {
-			users = append(users, user)
-		}
-		slices.Sort(users)
-		for _, user := range users {
-			p := s.Positions[user]
-			fmt.Fprintf(output, "    %s  supplyShares=%s  supplyAssets=%s  collateral=%s\n",
-				user,
-				formatInt(p.SupplyShares),
-				formatInt(s.SupplyAssets(user)),
-				formatInt(p.Collateral),
-			)
-		}
-	})
+func printState(ctx context.Context, output io.Writer, st storage.Store) error {
+	snapshot, err := st.Snapshot(ctx)
+	if err != nil {
+		return err
+	}
+	s := snapshot.State
+	checkpoint := snapshot.Checkpoint
+	m := s.Market
+	fmt.Fprintf(output, "\n=== market @ block %d (%s) ===\n", checkpoint.Number, checkpoint.Hash.Hex())
+	fmt.Fprintf(output, "  totalSupplyAssets: %s\n", formatInt(m.TotalSupplyAssets))
+	fmt.Fprintf(output, "  totalSupplyShares: %s\n", formatInt(m.TotalSupplyShares))
+	fmt.Fprintf(output, "  totalBorrowAssets: %s\n", formatInt(m.TotalBorrowAssets))
+	fmt.Fprintf(output, "  totalBorrowShares: %s\n", formatInt(m.TotalBorrowShares))
+	fmt.Fprintf(output, "  lastUpdate: %s\n", formatInt(m.LastUpdate))
+	fmt.Fprintf(output, "  supply share price: %s\n", supplySharePrice(m))
+	if len(s.Positions) == 0 {
+		fmt.Fprintln(output, "  (no positions)")
+		return nil
+	}
+	fmt.Fprintln(output, "  positions:")
+	users := make([]string, 0, len(s.Positions))
+	for user := range s.Positions {
+		users = append(users, user)
+	}
+	slices.Sort(users)
+	for _, user := range users {
+		p := s.Positions[user]
+		fmt.Fprintf(output, "    %s  supplyShares=%s  supplyAssets=%s  collateral=%s\n",
+			user,
+			formatInt(p.SupplyShares),
+			formatInt(s.SupplyAssets(user)),
+			formatInt(p.Collateral),
+		)
+	}
+	return nil
 }
 
 func formatInt(value *big.Int) string {

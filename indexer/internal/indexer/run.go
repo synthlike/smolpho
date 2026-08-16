@@ -12,7 +12,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/synthlike/smolpho/indexer/internal/bindings"
-	"github.com/synthlike/smolpho/indexer/internal/store"
+	"github.com/synthlike/smolpho/indexer/internal/storage"
+	"github.com/synthlike/smolpho/indexer/internal/storage/memory"
 )
 
 // Config controls one indexer process.
@@ -62,7 +63,8 @@ func Run(ctx context.Context, config Config) error {
 	}
 
 	source := &ethereumEventSource{filterer: filterer}
-	st := store.New(0)
+	st := memory.New(0)
+	defer st.Close()
 
 	result, err := syncWithRetry(ctx, client, source, st, deploymentBlock, config.BatchSize)
 	if err != nil {
@@ -74,7 +76,9 @@ func Run(ctx context.Context, config Config) error {
 		}
 		log.Printf("waiting for deployment block %d (chain head %d)", deploymentBlock, result.Head)
 	} else {
-		printState(os.Stdout, st)
+		if err := printState(ctx, os.Stdout, st); err != nil {
+			return fmt.Errorf("print state: %w", err)
+		}
 	}
 
 	if config.Follow {
@@ -87,7 +91,7 @@ func follow(
 	ctx context.Context,
 	chain chainReader,
 	source eventSource,
-	st *store.Store,
+	st storage.Store,
 	config Config,
 	deploymentBlock uint64,
 ) error {
@@ -110,7 +114,9 @@ func follow(
 			if result.Replayed {
 				log.Printf("canonical chain changed; replayed from deployment block %d", deploymentBlock)
 			}
-			printState(os.Stdout, st)
+			if err := printState(ctx, os.Stdout, st); err != nil {
+				return fmt.Errorf("print state: %w", err)
+			}
 		}
 	}
 }

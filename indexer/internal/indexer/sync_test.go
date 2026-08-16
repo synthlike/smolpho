@@ -10,7 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/synthlike/smolpho/indexer/internal/state"
-	"github.com/synthlike/smolpho/indexer/internal/store"
+	"github.com/synthlike/smolpho/indexer/internal/storage"
+	"github.com/synthlike/smolpho/indexer/internal/storage/memory"
 )
 
 type fakeChain struct {
@@ -81,7 +82,7 @@ func TestSyncWaitsForFutureDeploymentBlock(t *testing.T) {
 		headers: map[uint64]*types.Header{5: newHeader(5, 50, 1)},
 	}
 	source := &fakeEventSource{}
-	st := store.New(0)
+	st := memory.New(0)
 
 	result, err := syncWithRetry(context.Background(), chain, source, st, 10, 100)
 	if err != nil {
@@ -90,7 +91,11 @@ func TestSyncWaitsForFutureDeploymentBlock(t *testing.T) {
 	if !result.Pending || result.Head != 5 {
 		t.Fatalf("result = %+v, want pending at head 5", result)
 	}
-	if st.Checkpoint().Valid || len(source.calls) != 0 {
+	checkpoint, err := st.Checkpoint(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if checkpoint.Valid || len(source.calls) != 0 {
 		t.Fatal("future deployment unexpectedly advanced or queried events")
 	}
 
@@ -114,7 +119,7 @@ func TestSyncStartsAtDeploymentAndBatchesRanges(t *testing.T) {
 		chain.headers[block] = newHeader(block, block*10, 1)
 	}
 	source := &fakeEventSource{}
-	st := store.New(0)
+	st := memory.New(0)
 
 	if _, err := syncWithRetry(context.Background(), chain, source, st, 10, 2); err != nil {
 		t.Fatal(err)
@@ -128,7 +133,11 @@ func TestSyncStartsAtDeploymentAndBatchesRanges(t *testing.T) {
 			t.Fatalf("call %d = %+v, want %+v", i, source.calls[i], want[i])
 		}
 	}
-	if checkpoint := st.Checkpoint(); checkpoint.Number != 14 || checkpoint.Hash != chain.headers[14].Hash() {
+	checkpoint, err := st.Checkpoint(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if checkpoint.Number != 14 || checkpoint.Hash != chain.headers[14].Hash() {
 		t.Fatalf("checkpoint = %+v, want canonical block 14", checkpoint)
 	}
 }
@@ -146,7 +155,7 @@ func TestSyncReplaysSameHeightReorg(t *testing.T) {
 	source := &fakeEventSource{events: []orderedEvent{
 		supplied(11, 1, oldHead, "alice", 10, 20),
 	}}
-	st := store.New(0)
+	st := memory.New(0)
 	if _, err := syncWithRetry(context.Background(), chain, source, st, 10, 100); err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +193,7 @@ func TestSyncRetriesWhenChainChangesDuringQuery(t *testing.T) {
 		source.events = []orderedEvent{supplied(11, 1, newHead, "bob", 30, 40)}
 		source.after = nil
 	}
-	st := store.New(0)
+	st := memory.New(0)
 
 	if _, err := syncWithRetry(context.Background(), chain, source, st, 10, 100); err != nil {
 		t.Fatal(err)
@@ -199,11 +208,14 @@ func TestSyncRetriesWhenChainChangesDuringQuery(t *testing.T) {
 func TestCanonicalRangeIsAtomicOnSourceError(t *testing.T) {
 	header := newHeader(10, 100, 1)
 	chain := &fakeChain{head: 10, headers: map[uint64]*types.Header{10: header}}
-	st := store.New(100)
+	st := memory.New(100)
 	initialHash := common.HexToHash("0x1234")
-	st.Commit([]state.Event{state.Supplied{
+	initialCheckpoint := storage.Checkpoint{Number: 9, Hash: initialHash, Valid: true}
+	if err := st.Commit(context.Background(), []state.Event{state.Supplied{
 		User: "alice", Assets: big.NewInt(10), Shares: big.NewInt(20),
-	}}, 9, initialHash)
+	}}, initialCheckpoint); err != nil {
+		t.Fatal(err)
+	}
 	source := &fakeEventSource{
 		events: []orderedEvent{supplied(10, 1, header, "bob", 30, 40)},
 		err:    errors.New("rpc failed"),
@@ -213,7 +225,11 @@ func TestCanonicalRangeIsAtomicOnSourceError(t *testing.T) {
 	if err == nil {
 		t.Fatal("indexCanonicalRange succeeded despite source error")
 	}
-	if checkpoint := st.Checkpoint(); checkpoint.Number != 9 || checkpoint.Hash != initialHash {
+	checkpoint, checkpointErr := st.Checkpoint(context.Background())
+	if checkpointErr != nil {
+		t.Fatal(checkpointErr)
+	}
+	if checkpoint.Number != 9 || checkpoint.Hash != initialHash {
 		t.Fatalf("checkpoint changed after failed range: %+v", checkpoint)
 	}
 	assertPositionShares(t, st, "alice", 20)
@@ -229,15 +245,17 @@ func TestInterestAccrualUsesEventBlockTimestamp(t *testing.T) {
 		hash:  header.Hash(),
 		event: state.InterestAccrued{Elapsed: big.NewInt(7), Interest: big.NewInt(3)},
 	}}}
-	st := store.New(0)
+	st := memory.New(0)
 	if _, err := syncWithRetry(context.Background(), chain, source, st, 10, 100); err != nil {
 		t.Fatal(err)
 	}
-	st.Read(func(s *state.State, _ store.Checkpoint) {
-		if got := s.Market.LastUpdate; got.Cmp(big.NewInt(777)) != 0 {
-			t.Fatalf("lastUpdate = %s, want 777", got)
-		}
-	})
+	snapshot, err := st.Snapshot(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := snapshot.State.Market.LastUpdate; got.Cmp(big.NewInt(777)) != 0 {
+		t.Fatalf("lastUpdate = %s, want 777", got)
+	}
 }
 
 func TestSortOrderedEvents(t *testing.T) {
@@ -256,18 +274,20 @@ func TestSortOrderedEvents(t *testing.T) {
 	}
 }
 
-func assertPositionShares(t *testing.T, st *store.Store, user string, want int64) {
+func assertPositionShares(t *testing.T, st storage.Store, user string, want int64) {
 	t.Helper()
-	st.Read(func(s *state.State, _ store.Checkpoint) {
-		position := s.Positions[user]
-		if position == nil {
-			if want == 0 {
-				return
-			}
-			t.Fatalf("position %q missing, want %d shares", user, want)
+	snapshot, err := st.Snapshot(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	position := snapshot.State.Positions[user]
+	if position == nil {
+		if want == 0 {
+			return
 		}
-		if got := position.SupplyShares; got.Cmp(big.NewInt(want)) != 0 {
-			t.Fatalf("position %q shares = %s, want %d", user, got, want)
-		}
-	})
+		t.Fatalf("position %q missing, want %d shares", user, want)
+	}
+	if got := position.SupplyShares; got.Cmp(big.NewInt(want)) != 0 {
+		t.Fatalf("position %q shares = %s, want %d", user, got, want)
+	}
 }

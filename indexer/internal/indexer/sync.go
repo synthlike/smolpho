@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/synthlike/smolpho/indexer/internal/state"
-	"github.com/synthlike/smolpho/indexer/internal/store"
+	"github.com/synthlike/smolpho/indexer/internal/storage"
 )
 
 const maxCanonicalRetries = 3
@@ -34,7 +34,7 @@ func syncWithRetry(
 	ctx context.Context,
 	chain chainReader,
 	source eventSource,
-	st *store.Store,
+	st storage.Store,
 	deploymentBlock uint64,
 	batchSize uint64,
 ) (syncResult, error) {
@@ -56,7 +56,7 @@ func syncOnce(
 	ctx context.Context,
 	chain chainReader,
 	source eventSource,
-	st *store.Store,
+	st storage.Store,
 	deploymentBlock uint64,
 	batchSize uint64,
 ) (syncResult, error) {
@@ -65,9 +65,15 @@ func syncOnce(
 		return syncResult{}, fmt.Errorf("get chain head: %w", err)
 	}
 	result := syncResult{Head: head.Number.Uint64()}
+	checkpoint, err := st.Checkpoint(ctx)
+	if err != nil {
+		return result, fmt.Errorf("read checkpoint: %w", err)
+	}
 	if result.Head < deploymentBlock {
-		if st.Checkpoint().Valid {
-			st.Reset(0)
+		if checkpoint.Valid {
+			if err := st.Replace(ctx, state.New(0), storage.Checkpoint{}); err != nil {
+				return result, fmt.Errorf("reset state before deployment: %w", err)
+			}
 			result.Changed = true
 			result.Replayed = true
 		}
@@ -81,7 +87,6 @@ func syncOnce(
 	}
 	deploymentHash := deploymentHeader.Hash()
 
-	checkpoint := st.Checkpoint()
 	if checkpoint.Valid {
 		canonical := checkpoint.Number <= result.Head
 		if canonical {
@@ -92,15 +97,16 @@ func syncOnce(
 			canonical = header.Hash() == checkpoint.Hash
 		}
 		if !canonical {
-			st.Reset(deploymentHeader.Time)
-			checkpoint = store.Checkpoint{}
+			checkpoint = storage.Checkpoint{}
 			result.Changed = true
 			result.Replayed = true
 		}
 	}
 
 	if !checkpoint.Valid {
-		st.Reset(deploymentHeader.Time)
+		if err := st.Replace(ctx, state.New(deploymentHeader.Time), storage.Checkpoint{}); err != nil {
+			return result, fmt.Errorf("initialize state: %w", err)
+		}
 	}
 
 	start := deploymentBlock
@@ -133,7 +139,7 @@ func indexCanonicalRange(
 	ctx context.Context,
 	chain chainReader,
 	source eventSource,
-	st *store.Store,
+	st storage.Store,
 	deploymentBlock uint64,
 	deploymentHash common.Hash,
 	from uint64,
@@ -189,7 +195,10 @@ func indexCanonicalRange(
 	for i := range events {
 		decoded[i] = events[i].event
 	}
-	st.Commit(decoded, to, endAfter.Hash())
+	checkpoint := storage.Checkpoint{Number: to, Hash: endAfter.Hash(), Valid: true}
+	if err := st.Commit(ctx, decoded, checkpoint); err != nil {
+		return fmt.Errorf("commit range %d-%d: %w", from, to, err)
+	}
 	return nil
 }
 

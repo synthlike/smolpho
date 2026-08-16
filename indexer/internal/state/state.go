@@ -53,6 +53,35 @@ func New(initialTimestamp uint64) *State {
 	}
 }
 
+// Clone returns a deep copy that can be read or mutated independently.
+func (s *State) Clone() *State {
+	clone := &State{
+		Market: Market{
+			TotalSupplyAssets: cloneInt(s.Market.TotalSupplyAssets),
+			TotalSupplyShares: cloneInt(s.Market.TotalSupplyShares),
+			TotalBorrowAssets: cloneInt(s.Market.TotalBorrowAssets),
+			TotalBorrowShares: cloneInt(s.Market.TotalBorrowShares),
+			LastUpdate:        cloneInt(s.Market.LastUpdate),
+		},
+		Positions: make(map[string]*Position, len(s.Positions)),
+	}
+	for user, position := range s.Positions {
+		clone.Positions[user] = &Position{
+			SupplyShares: cloneInt(position.SupplyShares),
+			BorrowShares: cloneInt(position.BorrowShares),
+			Collateral:   cloneInt(position.Collateral),
+		}
+	}
+	return clone
+}
+
+func cloneInt(value *big.Int) *big.Int {
+	if value == nil {
+		return nil
+	}
+	return new(big.Int).Set(value)
+}
+
 // Event is a sealed set of the events the reducer understands. Concrete types
 // carry already-decoded values; the caller is responsible for delivering them
 // in (blockNumber, logIndex) order, matching on-chain emission order.
