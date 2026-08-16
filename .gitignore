@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Foundry build artifacts
+/contracts/cache/
+/contracts/out/
+/contracts/broadcast/
