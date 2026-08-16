@@ -258,6 +258,63 @@ func TestInterestAccrualUsesEventBlockTimestamp(t *testing.T) {
 	}
 }
 
+func TestSyncAppliesCompleteMarketLifecycleInLogOrder(t *testing.T) {
+	header := newHeader(10, 777, 1)
+	chain := &fakeChain{head: 10, headers: map[uint64]*types.Header{10: header}}
+	event := func(index uint, value state.Event) orderedEvent {
+		return orderedEvent{block: 10, index: index, hash: header.Hash(), event: value}
+	}
+	// Deliberately scramble the result returned by the event source. The sync
+	// layer must restore EVM log order before applying dependent transitions.
+	source := &fakeEventSource{events: []orderedEvent{
+		event(7, state.BadDebtRealized{
+			Borrower: "borrower", BadDebtAssets: big.NewInt(2_800), BadDebtShares: big.NewInt(2_800_000_000),
+		}),
+		event(4, state.Borrowed{
+			User: "borrower", Assets: big.NewInt(3_000), Shares: big.NewInt(3_000_000_000),
+		}),
+		event(1, state.Supplied{
+			User: "lender", Assets: big.NewInt(5_000), Shares: big.NewInt(5_000_000_000),
+		}),
+		event(6, state.Liquidated{
+			Liquidator:       "liquidator",
+			Borrower:         "borrower",
+			RepaidAssets:     big.NewInt(100),
+			RepaidShares:     big.NewInt(100_000_000),
+			SeizedCollateral: big.NewInt(80),
+		}),
+		event(2, state.CollateralSupplied{User: "borrower", Assets: big.NewInt(100)}),
+		event(5, state.Repaid{
+			User: "borrower", Assets: big.NewInt(100), Shares: big.NewInt(100_000_000),
+		}),
+		event(3, state.CollateralWithdrawn{User: "borrower", Assets: big.NewInt(20)}),
+	}}
+	store := memory.New(0)
+
+	if _, err := syncWithRetry(context.Background(), chain, source, store, 10, 100); err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := store.Snapshot(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	market := snapshot.State.Market
+	if market.TotalSupplyAssets.Cmp(big.NewInt(2_200)) != 0 {
+		t.Fatalf("totalSupplyAssets = %s, want 2200", market.TotalSupplyAssets)
+	}
+	if market.TotalBorrowAssets.Sign() != 0 || market.TotalBorrowShares.Sign() != 0 {
+		t.Fatalf("borrow totals = (%s assets, %s shares), want zero",
+			market.TotalBorrowAssets, market.TotalBorrowShares)
+	}
+	borrower := snapshot.State.Positions["borrower"]
+	if borrower == nil {
+		t.Fatal("borrower position is missing")
+	}
+	if borrower.BorrowShares.Sign() != 0 || borrower.Collateral.Sign() != 0 {
+		t.Fatalf("borrower = %+v, want zero debt and collateral", borrower)
+	}
+}
+
 func TestSortOrderedEvents(t *testing.T) {
 	events := []orderedEvent{
 		{block: 2, index: 1},

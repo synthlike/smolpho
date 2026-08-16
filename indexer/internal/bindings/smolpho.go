@@ -30,7 +30,7 @@ var (
 
 // SmolphoMetaData contains all meta data concerning the Smolpho contract.
 var SmolphoMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"loanToken_\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"collateralToken_\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"oracle_\",\"type\":\"address\",\"internalType\":\"contractIPriceOracle\"},{\"name\":\"lltv_\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"ratePerSecond_\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"liquidationIncentive_\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"VIRTUAL_ASSETS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"VIRTUAL_SHARES\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"WAD\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"accrueInterest\",\"inputs\":[],\"outputs\":[{\"name\":\"interest\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"availableLiquidity\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"borrow\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"borrowAssets\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"collateralToken\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isHealthy\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"liquidationIncentive\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"lltv\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"loanToken\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"market\",\"inputs\":[],\"outputs\":[{\"name\":\"totalSupplyAssets\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"totalSupplyShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"totalBorrowAssets\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"totalBorrowShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"lastUpdate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"oracle\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPriceOracle\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"position\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"supplyShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"borrowShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"collateral\",\"type\":\"uint128\",\"internalType\":\"uint128\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewBorrow\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewRepay\",\"inputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewSupply\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewWithdraw\",\"inputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ratePerSecond\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"supply\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"supplyAssets\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"supplyCollateral\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdraw\",\"inputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawCollateral\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Borrowed\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"CollateralSupplied\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"CollateralWithdrawn\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InterestAccrued\",\"inputs\":[{\"name\":\"elapsed\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"interest\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Supplied\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Withdrawn\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AmountTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientCollateral\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientLiquidity\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientSupplyShares\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidLiquidationIncentive\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidLltv\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OraclePriceTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"RateTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Reentrancy\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SameToken\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TimestampTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TransferFailed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UnhealthyPosition\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroAssets\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroShares\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"loanToken_\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"collateralToken_\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"oracle_\",\"type\":\"address\",\"internalType\":\"contractIPriceOracle\"},{\"name\":\"lltv_\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"ratePerSecond_\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"liquidationIncentive_\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"VIRTUAL_ASSETS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"VIRTUAL_SHARES\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"WAD\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"accrueInterest\",\"inputs\":[],\"outputs\":[{\"name\":\"interest\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"availableLiquidity\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"borrow\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"borrowAssets\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"collateralToken\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isHealthy\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"liquidate\",\"inputs\":[{\"name\":\"borrower\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"repaidShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"repaidAssets\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"seizedCollateral\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"badDebtAssets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"liquidationIncentive\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"lltv\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"loanToken\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"market\",\"inputs\":[],\"outputs\":[{\"name\":\"totalSupplyAssets\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"totalSupplyShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"totalBorrowAssets\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"totalBorrowShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"lastUpdate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"oracle\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPriceOracle\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"position\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"supplyShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"borrowShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"collateral\",\"type\":\"uint128\",\"internalType\":\"uint128\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewBorrow\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewRepay\",\"inputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewSupply\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewWithdraw\",\"inputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ratePerSecond\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"repay\",\"inputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"supply\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"supplyAssets\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"supplyCollateral\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdraw\",\"inputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawCollateral\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"BadDebtRealized\",\"inputs\":[{\"name\":\"borrower\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"badDebtAssets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"badDebtShares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Borrowed\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"CollateralSupplied\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"CollateralWithdrawn\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InterestAccrued\",\"inputs\":[{\"name\":\"elapsed\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"interest\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Liquidated\",\"inputs\":[{\"name\":\"liquidator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"borrower\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"repaidAssets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"repaidShares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"seizedCollateral\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Repaid\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Supplied\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Withdrawn\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AmountTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"HealthyPosition\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientBorrowShares\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientCollateral\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientLiquidity\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientSupplyShares\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidLiquidationIncentive\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidLltv\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OraclePriceTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"RateTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Reentrancy\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SameToken\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TimestampTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TransferFailed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UnhealthyPosition\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroAssets\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroShares\",\"inputs\":[]}]",
 }
 
 // SmolphoABI is the input ABI used to generate the binding from.
@@ -858,6 +858,48 @@ func (_Smolpho *SmolphoTransactorSession) Borrow(assets *big.Int) (*types.Transa
 	return _Smolpho.Contract.Borrow(&_Smolpho.TransactOpts, assets)
 }
 
+// Liquidate is a paid mutator transaction binding the contract method 0xbcbaf487.
+//
+// Solidity: function liquidate(address borrower, uint256 repaidShares) returns(uint256 repaidAssets, uint256 seizedCollateral, uint256 badDebtAssets)
+func (_Smolpho *SmolphoTransactor) Liquidate(opts *bind.TransactOpts, borrower common.Address, repaidShares *big.Int) (*types.Transaction, error) {
+	return _Smolpho.contract.Transact(opts, "liquidate", borrower, repaidShares)
+}
+
+// Liquidate is a paid mutator transaction binding the contract method 0xbcbaf487.
+//
+// Solidity: function liquidate(address borrower, uint256 repaidShares) returns(uint256 repaidAssets, uint256 seizedCollateral, uint256 badDebtAssets)
+func (_Smolpho *SmolphoSession) Liquidate(borrower common.Address, repaidShares *big.Int) (*types.Transaction, error) {
+	return _Smolpho.Contract.Liquidate(&_Smolpho.TransactOpts, borrower, repaidShares)
+}
+
+// Liquidate is a paid mutator transaction binding the contract method 0xbcbaf487.
+//
+// Solidity: function liquidate(address borrower, uint256 repaidShares) returns(uint256 repaidAssets, uint256 seizedCollateral, uint256 badDebtAssets)
+func (_Smolpho *SmolphoTransactorSession) Liquidate(borrower common.Address, repaidShares *big.Int) (*types.Transaction, error) {
+	return _Smolpho.Contract.Liquidate(&_Smolpho.TransactOpts, borrower, repaidShares)
+}
+
+// Repay is a paid mutator transaction binding the contract method 0x371fd8e6.
+//
+// Solidity: function repay(uint256 shares) returns(uint256 assets)
+func (_Smolpho *SmolphoTransactor) Repay(opts *bind.TransactOpts, shares *big.Int) (*types.Transaction, error) {
+	return _Smolpho.contract.Transact(opts, "repay", shares)
+}
+
+// Repay is a paid mutator transaction binding the contract method 0x371fd8e6.
+//
+// Solidity: function repay(uint256 shares) returns(uint256 assets)
+func (_Smolpho *SmolphoSession) Repay(shares *big.Int) (*types.Transaction, error) {
+	return _Smolpho.Contract.Repay(&_Smolpho.TransactOpts, shares)
+}
+
+// Repay is a paid mutator transaction binding the contract method 0x371fd8e6.
+//
+// Solidity: function repay(uint256 shares) returns(uint256 assets)
+func (_Smolpho *SmolphoTransactorSession) Repay(shares *big.Int) (*types.Transaction, error) {
+	return _Smolpho.Contract.Repay(&_Smolpho.TransactOpts, shares)
+}
+
 // Supply is a paid mutator transaction binding the contract method 0x35403023.
 //
 // Solidity: function supply(uint256 assets) returns(uint256 shares)
@@ -940,6 +982,152 @@ func (_Smolpho *SmolphoSession) WithdrawCollateral(assets *big.Int) (*types.Tran
 // Solidity: function withdrawCollateral(uint256 assets) returns()
 func (_Smolpho *SmolphoTransactorSession) WithdrawCollateral(assets *big.Int) (*types.Transaction, error) {
 	return _Smolpho.Contract.WithdrawCollateral(&_Smolpho.TransactOpts, assets)
+}
+
+// SmolphoBadDebtRealizedIterator is returned from FilterBadDebtRealized and is used to iterate over the raw logs and unpacked data for BadDebtRealized events raised by the Smolpho contract.
+type SmolphoBadDebtRealizedIterator struct {
+	Event *SmolphoBadDebtRealized // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *SmolphoBadDebtRealizedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(SmolphoBadDebtRealized)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(SmolphoBadDebtRealized)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *SmolphoBadDebtRealizedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *SmolphoBadDebtRealizedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// SmolphoBadDebtRealized represents a BadDebtRealized event raised by the Smolpho contract.
+type SmolphoBadDebtRealized struct {
+	Borrower      common.Address
+	BadDebtAssets *big.Int
+	BadDebtShares *big.Int
+	Raw           types.Log // Blockchain specific contextual infos
+}
+
+// FilterBadDebtRealized is a free log retrieval operation binding the contract event 0xd14612560c7661a79aa4084251af048c123c29032771c1c57b30f592173bbef8.
+//
+// Solidity: event BadDebtRealized(address indexed borrower, uint256 badDebtAssets, uint256 badDebtShares)
+func (_Smolpho *SmolphoFilterer) FilterBadDebtRealized(opts *bind.FilterOpts, borrower []common.Address) (*SmolphoBadDebtRealizedIterator, error) {
+
+	var borrowerRule []interface{}
+	for _, borrowerItem := range borrower {
+		borrowerRule = append(borrowerRule, borrowerItem)
+	}
+
+	logs, sub, err := _Smolpho.contract.FilterLogs(opts, "BadDebtRealized", borrowerRule)
+	if err != nil {
+		return nil, err
+	}
+	return &SmolphoBadDebtRealizedIterator{contract: _Smolpho.contract, event: "BadDebtRealized", logs: logs, sub: sub}, nil
+}
+
+// WatchBadDebtRealized is a free log subscription operation binding the contract event 0xd14612560c7661a79aa4084251af048c123c29032771c1c57b30f592173bbef8.
+//
+// Solidity: event BadDebtRealized(address indexed borrower, uint256 badDebtAssets, uint256 badDebtShares)
+func (_Smolpho *SmolphoFilterer) WatchBadDebtRealized(opts *bind.WatchOpts, sink chan<- *SmolphoBadDebtRealized, borrower []common.Address) (event.Subscription, error) {
+
+	var borrowerRule []interface{}
+	for _, borrowerItem := range borrower {
+		borrowerRule = append(borrowerRule, borrowerItem)
+	}
+
+	logs, sub, err := _Smolpho.contract.WatchLogs(opts, "BadDebtRealized", borrowerRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(SmolphoBadDebtRealized)
+				if err := _Smolpho.contract.UnpackLog(event, "BadDebtRealized", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseBadDebtRealized is a log parse operation binding the contract event 0xd14612560c7661a79aa4084251af048c123c29032771c1c57b30f592173bbef8.
+//
+// Solidity: event BadDebtRealized(address indexed borrower, uint256 badDebtAssets, uint256 badDebtShares)
+func (_Smolpho *SmolphoFilterer) ParseBadDebtRealized(log types.Log) (*SmolphoBadDebtRealized, error) {
+	event := new(SmolphoBadDebtRealized)
+	if err := _Smolpho.contract.UnpackLog(event, "BadDebtRealized", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
 }
 
 // SmolphoBorrowedIterator is returned from FilterBorrowed and is used to iterate over the raw logs and unpacked data for Borrowed events raised by the Smolpho contract.
@@ -1507,6 +1695,308 @@ func (_Smolpho *SmolphoFilterer) WatchInterestAccrued(opts *bind.WatchOpts, sink
 func (_Smolpho *SmolphoFilterer) ParseInterestAccrued(log types.Log) (*SmolphoInterestAccrued, error) {
 	event := new(SmolphoInterestAccrued)
 	if err := _Smolpho.contract.UnpackLog(event, "InterestAccrued", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// SmolphoLiquidatedIterator is returned from FilterLiquidated and is used to iterate over the raw logs and unpacked data for Liquidated events raised by the Smolpho contract.
+type SmolphoLiquidatedIterator struct {
+	Event *SmolphoLiquidated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *SmolphoLiquidatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(SmolphoLiquidated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(SmolphoLiquidated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *SmolphoLiquidatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *SmolphoLiquidatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// SmolphoLiquidated represents a Liquidated event raised by the Smolpho contract.
+type SmolphoLiquidated struct {
+	Liquidator       common.Address
+	Borrower         common.Address
+	RepaidAssets     *big.Int
+	RepaidShares     *big.Int
+	SeizedCollateral *big.Int
+	Raw              types.Log // Blockchain specific contextual infos
+}
+
+// FilterLiquidated is a free log retrieval operation binding the contract event 0xfcbc974bf3a532baf2bb229db3c37fd58299b62d2d1db6a855dac5b693bb6ff3.
+//
+// Solidity: event Liquidated(address indexed liquidator, address indexed borrower, uint256 repaidAssets, uint256 repaidShares, uint256 seizedCollateral)
+func (_Smolpho *SmolphoFilterer) FilterLiquidated(opts *bind.FilterOpts, liquidator []common.Address, borrower []common.Address) (*SmolphoLiquidatedIterator, error) {
+
+	var liquidatorRule []interface{}
+	for _, liquidatorItem := range liquidator {
+		liquidatorRule = append(liquidatorRule, liquidatorItem)
+	}
+	var borrowerRule []interface{}
+	for _, borrowerItem := range borrower {
+		borrowerRule = append(borrowerRule, borrowerItem)
+	}
+
+	logs, sub, err := _Smolpho.contract.FilterLogs(opts, "Liquidated", liquidatorRule, borrowerRule)
+	if err != nil {
+		return nil, err
+	}
+	return &SmolphoLiquidatedIterator{contract: _Smolpho.contract, event: "Liquidated", logs: logs, sub: sub}, nil
+}
+
+// WatchLiquidated is a free log subscription operation binding the contract event 0xfcbc974bf3a532baf2bb229db3c37fd58299b62d2d1db6a855dac5b693bb6ff3.
+//
+// Solidity: event Liquidated(address indexed liquidator, address indexed borrower, uint256 repaidAssets, uint256 repaidShares, uint256 seizedCollateral)
+func (_Smolpho *SmolphoFilterer) WatchLiquidated(opts *bind.WatchOpts, sink chan<- *SmolphoLiquidated, liquidator []common.Address, borrower []common.Address) (event.Subscription, error) {
+
+	var liquidatorRule []interface{}
+	for _, liquidatorItem := range liquidator {
+		liquidatorRule = append(liquidatorRule, liquidatorItem)
+	}
+	var borrowerRule []interface{}
+	for _, borrowerItem := range borrower {
+		borrowerRule = append(borrowerRule, borrowerItem)
+	}
+
+	logs, sub, err := _Smolpho.contract.WatchLogs(opts, "Liquidated", liquidatorRule, borrowerRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(SmolphoLiquidated)
+				if err := _Smolpho.contract.UnpackLog(event, "Liquidated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseLiquidated is a log parse operation binding the contract event 0xfcbc974bf3a532baf2bb229db3c37fd58299b62d2d1db6a855dac5b693bb6ff3.
+//
+// Solidity: event Liquidated(address indexed liquidator, address indexed borrower, uint256 repaidAssets, uint256 repaidShares, uint256 seizedCollateral)
+func (_Smolpho *SmolphoFilterer) ParseLiquidated(log types.Log) (*SmolphoLiquidated, error) {
+	event := new(SmolphoLiquidated)
+	if err := _Smolpho.contract.UnpackLog(event, "Liquidated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// SmolphoRepaidIterator is returned from FilterRepaid and is used to iterate over the raw logs and unpacked data for Repaid events raised by the Smolpho contract.
+type SmolphoRepaidIterator struct {
+	Event *SmolphoRepaid // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *SmolphoRepaidIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(SmolphoRepaid)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(SmolphoRepaid)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *SmolphoRepaidIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *SmolphoRepaidIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// SmolphoRepaid represents a Repaid event raised by the Smolpho contract.
+type SmolphoRepaid struct {
+	User   common.Address
+	Assets *big.Int
+	Shares *big.Int
+	Raw    types.Log // Blockchain specific contextual infos
+}
+
+// FilterRepaid is a free log retrieval operation binding the contract event 0x1b8cd61ed43bec7c6bdad3a18ffee613f99c853d16c50678d248d879e1b43438.
+//
+// Solidity: event Repaid(address indexed user, uint256 assets, uint256 shares)
+func (_Smolpho *SmolphoFilterer) FilterRepaid(opts *bind.FilterOpts, user []common.Address) (*SmolphoRepaidIterator, error) {
+
+	var userRule []interface{}
+	for _, userItem := range user {
+		userRule = append(userRule, userItem)
+	}
+
+	logs, sub, err := _Smolpho.contract.FilterLogs(opts, "Repaid", userRule)
+	if err != nil {
+		return nil, err
+	}
+	return &SmolphoRepaidIterator{contract: _Smolpho.contract, event: "Repaid", logs: logs, sub: sub}, nil
+}
+
+// WatchRepaid is a free log subscription operation binding the contract event 0x1b8cd61ed43bec7c6bdad3a18ffee613f99c853d16c50678d248d879e1b43438.
+//
+// Solidity: event Repaid(address indexed user, uint256 assets, uint256 shares)
+func (_Smolpho *SmolphoFilterer) WatchRepaid(opts *bind.WatchOpts, sink chan<- *SmolphoRepaid, user []common.Address) (event.Subscription, error) {
+
+	var userRule []interface{}
+	for _, userItem := range user {
+		userRule = append(userRule, userItem)
+	}
+
+	logs, sub, err := _Smolpho.contract.WatchLogs(opts, "Repaid", userRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(SmolphoRepaid)
+				if err := _Smolpho.contract.UnpackLog(event, "Repaid", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseRepaid is a log parse operation binding the contract event 0x1b8cd61ed43bec7c6bdad3a18ffee613f99c853d16c50678d248d879e1b43438.
+//
+// Solidity: event Repaid(address indexed user, uint256 assets, uint256 shares)
+func (_Smolpho *SmolphoFilterer) ParseRepaid(log types.Log) (*SmolphoRepaid, error) {
+	event := new(SmolphoRepaid)
+	if err := _Smolpho.contract.UnpackLog(event, "Repaid", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

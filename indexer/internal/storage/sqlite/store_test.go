@@ -39,9 +39,11 @@ func TestStatePersistsAcrossReopen(t *testing.T) {
 		Hash:   common.HexToHash("0x1234"),
 		Valid:  true,
 	}
-	if err := store.Commit(context.Background(), []state.Event{state.Supplied{
-		User: "alice", Assets: big.NewInt(25), Shares: big.NewInt(50),
-	}}, checkpoint); err != nil {
+	if err := store.Commit(context.Background(), []state.Event{
+		state.Supplied{User: "alice", Assets: big.NewInt(25), Shares: big.NewInt(50)},
+		state.CollateralSupplied{User: "alice", Assets: big.NewInt(7)},
+		state.Borrowed{User: "alice", Assets: big.NewInt(8), Shares: big.NewInt(16)},
+	}, checkpoint); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.Close(); err != nil {
@@ -65,6 +67,19 @@ func TestStatePersistsAcrossReopen(t *testing.T) {
 	}
 	if got := snapshot.State.Market.TotalSupplyAssets; got.Cmp(big.NewInt(25)) != 0 {
 		t.Fatalf("totalSupplyAssets = %s, want 25", got)
+	}
+	if got := snapshot.State.Market.TotalBorrowAssets; got.Cmp(big.NewInt(8)) != 0 {
+		t.Fatalf("totalBorrowAssets = %s, want 8", got)
+	}
+	position := snapshot.State.Positions["alice"]
+	if position == nil {
+		t.Fatal("alice position is missing")
+	}
+	if got := position.BorrowShares; got.Cmp(big.NewInt(16)) != 0 {
+		t.Fatalf("borrowShares = %s, want 16", got)
+	}
+	if got := position.Collateral; got.Cmp(big.NewInt(7)) != 0 {
+		t.Fatalf("collateral = %s, want 7", got)
 	}
 }
 

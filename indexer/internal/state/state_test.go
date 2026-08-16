@@ -95,3 +95,119 @@ func TestCollateralSupplyUpdatesPosition(t *testing.T) {
 		t.Fatalf("alice collateral = %s, want 300", got)
 	}
 }
+
+func TestCollateralWithdrawReducesPosition(t *testing.T) {
+	s := New(0)
+	s.Apply(CollateralSupplied{User: "alice", Assets: bi(300)})
+	s.Apply(CollateralWithdrawn{User: "alice", Assets: bi(125)})
+
+	if got := s.Positions["alice"].Collateral; got.Cmp(bi(175)) != 0 {
+		t.Fatalf("alice collateral = %s, want 175", got)
+	}
+}
+
+func TestBorrowAndRepayUpdateDebt(t *testing.T) {
+	s := New(0)
+	s.Apply(Borrowed{User: "alice", Assets: bi(1_000), Shares: bi(1_000_000_000)})
+
+	if got := s.BorrowAssets("alice"); got.Cmp(bi(1_000)) != 0 {
+		t.Fatalf("borrowAssets(alice) = %s, want 1000", got)
+	}
+	s.Apply(Repaid{User: "alice", Assets: bi(400), Shares: bi(400_000_000)})
+
+	if got := s.Market.TotalBorrowAssets; got.Cmp(bi(600)) != 0 {
+		t.Fatalf("totalBorrowAssets = %s, want 600", got)
+	}
+	if got := s.Market.TotalBorrowShares; got.Cmp(bi(600_000_000)) != 0 {
+		t.Fatalf("totalBorrowShares = %s, want 600000000", got)
+	}
+	if got := s.Positions["alice"].BorrowShares; got.Cmp(bi(600_000_000)) != 0 {
+		t.Fatalf("alice borrow shares = %s, want 600000000", got)
+	}
+}
+
+func TestRepayAssetsSaturateAtZero(t *testing.T) {
+	s := New(0)
+	s.Apply(Borrowed{User: "alice", Assets: bi(1), Shares: bi(1)})
+	s.Apply(Repaid{User: "alice", Assets: bi(2), Shares: bi(1)})
+
+	if got := s.Market.TotalBorrowAssets; got.Sign() != 0 {
+		t.Fatalf("totalBorrowAssets = %s, want 0", got)
+	}
+}
+
+func TestLiquidationAndBadDebtMirrorContractPhases(t *testing.T) {
+	s := New(0)
+	s.Apply(Supplied{User: "lender", Assets: bi(5_000), Shares: bi(5_000_000_000)})
+	s.Apply(CollateralSupplied{User: "borrower", Assets: bi(100)})
+	s.Apply(Borrowed{User: "borrower", Assets: bi(3_000), Shares: bi(3_000_000_000)})
+	s.Apply(Liquidated{
+		Liquidator:       "liquidator",
+		Borrower:         "borrower",
+		RepaidAssets:     bi(100),
+		RepaidShares:     bi(100_000_000),
+		SeizedCollateral: bi(100),
+	})
+
+	position := s.Positions["borrower"]
+	if got := position.BorrowShares; got.Cmp(bi(2_900_000_000)) != 0 {
+		t.Fatalf("borrower shares after liquidation = %s, want 2900000000", got)
+	}
+	if got := position.Collateral; got.Sign() != 0 {
+		t.Fatalf("borrower collateral after liquidation = %s, want 0", got)
+	}
+	if _, exists := s.Positions["liquidator"]; exists {
+		t.Fatal("liquidation created a protocol position for the liquidator")
+	}
+
+	s.Apply(BadDebtRealized{
+		Borrower:      "borrower",
+		BadDebtAssets: bi(2_900),
+		BadDebtShares: bi(2_900_000_000),
+	})
+	if got := position.BorrowShares; got.Sign() != 0 {
+		t.Fatalf("borrower shares after bad debt = %s, want 0", got)
+	}
+	if got := s.Market.TotalBorrowAssets; got.Sign() != 0 {
+		t.Fatalf("totalBorrowAssets after bad debt = %s, want 0", got)
+	}
+	if got := s.Market.TotalBorrowShares; got.Sign() != 0 {
+		t.Fatalf("totalBorrowShares after bad debt = %s, want 0", got)
+	}
+	if got := s.Market.TotalSupplyAssets; got.Cmp(bi(2_100)) != 0 {
+		t.Fatalf("totalSupplyAssets after bad debt = %s, want 2100", got)
+	}
+}
+
+func TestBorrowShareConservation(t *testing.T) {
+	s := New(0)
+	s.Apply(Borrowed{User: "alice", Assets: bi(100), Shares: bi(200)})
+	s.Apply(Borrowed{User: "bob", Assets: bi(300), Shares: bi(400)})
+	s.Apply(Repaid{User: "alice", Assets: bi(25), Shares: bi(50)})
+	s.Apply(Liquidated{
+		Borrower: "bob", RepaidAssets: bi(75), RepaidShares: bi(100), SeizedCollateral: bi(0),
+	})
+
+	sum := new(big.Int)
+	for _, position := range s.Positions {
+		sum.Add(sum, position.BorrowShares)
+	}
+	if sum.Cmp(s.Market.TotalBorrowShares) != 0 {
+		t.Fatalf("sum(borrow shares) = %s, totalBorrowShares = %s", sum, s.Market.TotalBorrowShares)
+	}
+}
+
+func TestBorrowAssetsUnknownUser(t *testing.T) {
+	s := New(0)
+	if got := s.BorrowAssets("nobody"); got.Sign() != 0 {
+		t.Fatalf("borrowAssets(nobody) = %s, want 0", got)
+	}
+}
+
+func TestBorrowAssetsRoundsUp(t *testing.T) {
+	s := New(0)
+	s.Apply(Borrowed{User: "alice", Assets: bi(1), Shares: bi(1)})
+	if got := s.BorrowAssets("alice"); got.Cmp(bi(1)) != 0 {
+		t.Fatalf("borrowAssets(alice) = %s, want rounded-up 1", got)
+	}
+}

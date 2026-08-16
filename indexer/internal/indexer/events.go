@@ -94,5 +94,90 @@ func (s *ethereumEventSource) Events(ctx context.Context, from, to uint64) ([]or
 		return nil, fmt.Errorf("iterate CollateralSupplied: %w", iterErr)
 	}
 
+	itColWd, err := s.filterer.FilterCollateralWithdrawn(opts, nil)
+	if err != nil {
+		return nil, fmt.Errorf("filter CollateralWithdrawn: %w", err)
+	}
+	for itColWd.Next() {
+		e := itColWd.Event
+		events = append(events, orderedEvent{e.Raw.BlockNumber, e.Raw.Index, e.Raw.BlockHash,
+			state.CollateralWithdrawn{User: addressKey(e.User), Assets: e.Assets}})
+	}
+	iterErr = itColWd.Error()
+	_ = itColWd.Close()
+	if iterErr != nil {
+		return nil, fmt.Errorf("iterate CollateralWithdrawn: %w", iterErr)
+	}
+
+	itBorrowed, err := s.filterer.FilterBorrowed(opts, nil)
+	if err != nil {
+		return nil, fmt.Errorf("filter Borrowed: %w", err)
+	}
+	for itBorrowed.Next() {
+		e := itBorrowed.Event
+		events = append(events, orderedEvent{e.Raw.BlockNumber, e.Raw.Index, e.Raw.BlockHash,
+			state.Borrowed{User: addressKey(e.User), Assets: e.Assets, Shares: e.Shares}})
+	}
+	iterErr = itBorrowed.Error()
+	_ = itBorrowed.Close()
+	if iterErr != nil {
+		return nil, fmt.Errorf("iterate Borrowed: %w", iterErr)
+	}
+
+	itRepaid, err := s.filterer.FilterRepaid(opts, nil)
+	if err != nil {
+		return nil, fmt.Errorf("filter Repaid: %w", err)
+	}
+	for itRepaid.Next() {
+		e := itRepaid.Event
+		events = append(events, orderedEvent{e.Raw.BlockNumber, e.Raw.Index, e.Raw.BlockHash,
+			state.Repaid{User: addressKey(e.User), Assets: e.Assets, Shares: e.Shares}})
+	}
+	iterErr = itRepaid.Error()
+	_ = itRepaid.Close()
+	if iterErr != nil {
+		return nil, fmt.Errorf("iterate Repaid: %w", iterErr)
+	}
+
+	itLiquidated, err := s.filterer.FilterLiquidated(opts, nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("filter Liquidated: %w", err)
+	}
+	for itLiquidated.Next() {
+		e := itLiquidated.Event
+		events = append(events, orderedEvent{e.Raw.BlockNumber, e.Raw.Index, e.Raw.BlockHash,
+			state.Liquidated{
+				Liquidator:       addressKey(e.Liquidator),
+				Borrower:         addressKey(e.Borrower),
+				RepaidAssets:     e.RepaidAssets,
+				RepaidShares:     e.RepaidShares,
+				SeizedCollateral: e.SeizedCollateral,
+			}})
+	}
+	iterErr = itLiquidated.Error()
+	_ = itLiquidated.Close()
+	if iterErr != nil {
+		return nil, fmt.Errorf("iterate Liquidated: %w", iterErr)
+	}
+
+	itBadDebt, err := s.filterer.FilterBadDebtRealized(opts, nil)
+	if err != nil {
+		return nil, fmt.Errorf("filter BadDebtRealized: %w", err)
+	}
+	for itBadDebt.Next() {
+		e := itBadDebt.Event
+		events = append(events, orderedEvent{e.Raw.BlockNumber, e.Raw.Index, e.Raw.BlockHash,
+			state.BadDebtRealized{
+				Borrower:      addressKey(e.Borrower),
+				BadDebtAssets: e.BadDebtAssets,
+				BadDebtShares: e.BadDebtShares,
+			}})
+	}
+	iterErr = itBadDebt.Error()
+	_ = itBadDebt.Close()
+	if iterErr != nil {
+		return nil, fmt.Errorf("iterate BadDebtRealized: %w", iterErr)
+	}
+
 	return events, nil
 }

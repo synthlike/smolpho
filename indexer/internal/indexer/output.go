@@ -46,10 +46,12 @@ func printState(ctx context.Context, output io.Writer, st storage.Store) error {
 	slices.Sort(users)
 	for _, user := range users {
 		p := s.Positions[user]
-		fmt.Fprintf(output, "    %s  supplyShares=%s  supplyAssets=%s  collateral=%s\n",
+		fmt.Fprintf(output, "    %s  supplyShares=%s  supplyAssets=%s  borrowShares=%s  borrowAssets=%s  collateral=%s\n",
 			user,
 			formatInt(p.SupplyShares),
 			formatInt(s.SupplyAssets(user)),
+			formatInt(p.BorrowShares),
+			formatInt(s.BorrowAssets(user)),
 			formatInt(p.Collateral),
 		)
 	}

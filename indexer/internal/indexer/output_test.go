@@ -1,8 +1,17 @@
 package indexer
 
 import (
+	"bytes"
+	"context"
 	"math/big"
+	"strings"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/synthlike/smolpho/indexer/internal/state"
+	"github.com/synthlike/smolpho/indexer/internal/storage"
+	"github.com/synthlike/smolpho/indexer/internal/storage/memory"
 )
 
 func TestFormatInt(t *testing.T) {
@@ -29,5 +38,27 @@ func TestFormatInt(t *testing.T) {
 				t.Fatalf("formatInt(%s) = %q, want %q", input, got, test.want)
 			}
 		})
+	}
+}
+
+func TestPrintStateIncludesBorrowPosition(t *testing.T) {
+	store := memory.New(100)
+	if err := store.Commit(context.Background(), []state.Event{state.Borrowed{
+		User: "alice", Assets: big.NewInt(1_000), Shares: big.NewInt(1_000_000_000),
+	}}, storage.Checkpoint{
+		Number: 7,
+		Hash:   common.HexToHash("0x1234"),
+		Valid:  true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	var output bytes.Buffer
+	if err := printState(context.Background(), &output, store); err != nil {
+		t.Fatal(err)
+	}
+	want := "borrowShares=1_000_000_000  borrowAssets=1_000"
+	if !strings.Contains(output.String(), want) {
+		t.Fatalf("output does not contain %q:\n%s", want, output.String())
 	}
 }

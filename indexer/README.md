@@ -1,8 +1,12 @@
 # Smolpho indexer
 
-The indexer reconstructs Smolpho's implemented supply-side market and user
-positions from contract events. Its state and checkpoints are held in memory;
-restarting the process replays the chain from the deployment block.
+The indexer reconstructs Smolpho's market and user positions from contract
+events, including supply, collateral, borrowing, repayment, liquidation, and
+bad-debt accounting. Its state and checkpoints are held in memory; restarting
+the process replays the chain from the deployment block.
+
+See the [indexer design notes](../INDEXING.md) for its design history, event
+pipeline, reorganization handling, atomicity model, and storage trade-offs.
 
 ## Usage
 

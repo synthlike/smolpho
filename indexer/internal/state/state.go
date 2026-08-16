@@ -115,10 +115,55 @@ type CollateralSupplied struct {
 	Assets *big.Int
 }
 
-func (InterestAccrued) isEvent()    {}
-func (Supplied) isEvent()           {}
-func (Withdrawn) isEvent()          {}
-func (CollateralSupplied) isEvent() {}
+// CollateralWithdrawn removes collateral assets from a user position.
+type CollateralWithdrawn struct {
+	User   string
+	Assets *big.Int
+}
+
+// Borrowed credits debt shares to a user and grows the borrow totals.
+type Borrowed struct {
+	User   string
+	Assets *big.Int
+	Shares *big.Int
+}
+
+// Repaid burns a user's debt shares and shrinks the borrow totals.
+type Repaid struct {
+	User   string
+	Assets *big.Int
+	Shares *big.Int
+}
+
+// Liquidated repays part of a borrower's debt and removes seized collateral.
+// Liquidator is retained for event fidelity but has no protocol position
+// transition: seized collateral leaves the protocol rather than becoming
+// deposited collateral for the liquidator.
+type Liquidated struct {
+	Liquidator       string
+	Borrower         string
+	RepaidAssets     *big.Int
+	RepaidShares     *big.Int
+	SeizedCollateral *big.Int
+}
+
+// BadDebtRealized removes a borrower's remaining unpayable debt and charges
+// the corresponding asset loss to suppliers.
+type BadDebtRealized struct {
+	Borrower      string
+	BadDebtAssets *big.Int
+	BadDebtShares *big.Int
+}
+
+func (InterestAccrued) isEvent()     {}
+func (Supplied) isEvent()            {}
+func (Withdrawn) isEvent()           {}
+func (CollateralSupplied) isEvent()  {}
+func (CollateralWithdrawn) isEvent() {}
+func (Borrowed) isEvent()            {}
+func (Repaid) isEvent()              {}
+func (Liquidated) isEvent()          {}
+func (BadDebtRealized) isEvent()     {}
 
 // position returns the user's position, creating a zeroed one on first sight.
 func (s *State) position(user string) *Position {
@@ -156,7 +201,40 @@ func (s *State) Apply(ev Event) {
 	case CollateralSupplied:
 		p := s.position(e.User)
 		p.Collateral.Add(p.Collateral, e.Assets)
+	case CollateralWithdrawn:
+		p := s.position(e.User)
+		p.Collateral.Sub(p.Collateral, e.Assets)
+	case Borrowed:
+		p := s.position(e.User)
+		p.BorrowShares.Add(p.BorrowShares, e.Shares)
+		s.Market.TotalBorrowShares.Add(s.Market.TotalBorrowShares, e.Shares)
+		s.Market.TotalBorrowAssets.Add(s.Market.TotalBorrowAssets, e.Assets)
+	case Repaid:
+		p := s.position(e.User)
+		p.BorrowShares.Sub(p.BorrowShares, e.Shares)
+		s.Market.TotalBorrowShares.Sub(s.Market.TotalBorrowShares, e.Shares)
+		subFloorZero(s.Market.TotalBorrowAssets, e.Assets)
+	case Liquidated:
+		p := s.position(e.Borrower)
+		p.BorrowShares.Sub(p.BorrowShares, e.RepaidShares)
+		p.Collateral.Sub(p.Collateral, e.SeizedCollateral)
+		s.Market.TotalBorrowShares.Sub(s.Market.TotalBorrowShares, e.RepaidShares)
+		subFloorZero(s.Market.TotalBorrowAssets, e.RepaidAssets)
+	case BadDebtRealized:
+		p := s.position(e.Borrower)
+		p.BorrowShares.Sub(p.BorrowShares, e.BadDebtShares)
+		s.Market.TotalBorrowShares.Sub(s.Market.TotalBorrowShares, e.BadDebtShares)
+		subFloorZero(s.Market.TotalBorrowAssets, e.BadDebtAssets)
+		subFloorZero(s.Market.TotalSupplyAssets, e.BadDebtAssets)
 	}
+}
+
+func subFloorZero(value, amount *big.Int) {
+	if amount.Cmp(value) >= 0 {
+		value.SetInt64(0)
+		return
+	}
+	value.Sub(value, amount)
 }
 
 // SupplyAssets returns the loan-token value of a user's supply shares, using
@@ -170,6 +248,16 @@ func (s *State) SupplyAssets(user string) *big.Int {
 	return toAssetsDown(p.SupplyShares, s.Market.TotalSupplyAssets, s.Market.TotalSupplyShares)
 }
 
+// BorrowAssets returns the loan-token debt represented by a user's borrow
+// shares, using the contract's rounded-up virtual-offset conversion.
+func (s *State) BorrowAssets(user string) *big.Int {
+	p, ok := s.Positions[user]
+	if !ok {
+		return new(big.Int)
+	}
+	return toAssetsUp(p.BorrowShares, s.Market.TotalBorrowAssets, s.Market.TotalBorrowShares)
+}
+
 // toAssetsDown = floor(shares * (totalAssets + VIRTUAL_ASSETS) /
 //
 //	(totalShares + VIRTUAL_SHARES)).
@@ -177,4 +265,15 @@ func toAssetsDown(shares, totalAssets, totalShares *big.Int) *big.Int {
 	num := new(big.Int).Mul(shares, new(big.Int).Add(totalAssets, VirtualAssets))
 	den := new(big.Int).Add(totalShares, VirtualShares)
 	return num.Div(num, den)
+}
+
+func toAssetsUp(shares, totalAssets, totalShares *big.Int) *big.Int {
+	num := new(big.Int).Mul(shares, new(big.Int).Add(totalAssets, VirtualAssets))
+	den := new(big.Int).Add(totalShares, VirtualShares)
+	quotient, remainder := new(big.Int), new(big.Int)
+	quotient.QuoRem(num, den, remainder)
+	if remainder.Sign() != 0 {
+		quotient.Add(quotient, big.NewInt(1))
+	}
+	return quotient
 }
