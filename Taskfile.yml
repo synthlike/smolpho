@@ -1,0 +1,47 @@
+version: "3"
+
+# TODO: add sources/generates
+
+vars:
+  CONTRACTS_DIR: contracts
+  INDEXER_DIR: indexer
+  ARTIFACT: contracts/out/Smolpho.sol/Smolpho.json
+  ABI: indexer/internal/bindings/smolpho.abi.json
+  BINDINGS: indexer/internal/bindings/smolpho.go
+
+tasks:
+  build:
+    desc: Build contracts, refresh ABI + bindings, and build the indexer
+    cmds:
+      - task: contracts:build
+      - task: indexer:abi
+      - task: indexer:bindings
+      - task: indexer:build
+
+  contracts:build:
+    desc: Compile production Solidity contracts with Foundry
+    dir: "{{.CONTRACTS_DIR}}"
+    cmds:
+      - forge build --skip test
+
+  contracts:test:
+    desc: Run the Solidity test suite
+    dir: "{{.CONTRACTS_DIR}}"
+    cmds:
+      - forge test
+
+  indexer:abi:
+    desc: Extract the Smolpho ABI from the Foundry artifact into the indexer
+    cmds:
+      - jq '.abi' {{.ARTIFACT}} > {{.ABI}}
+
+  indexer:bindings:
+    desc: Generate Go contract bindings from the ABI
+    cmds:
+      - abigen --abi {{.ABI}} --pkg bindings --type Smolpho --out {{.BINDINGS}}
+
+  indexer:build:
+    desc: Build the Go indexer
+    dir: "{{.INDEXER_DIR}}"
+    cmds:
+      - go build ./...
