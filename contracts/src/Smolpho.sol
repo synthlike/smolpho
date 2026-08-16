@@ -58,6 +58,7 @@ contract Smolpho {
     error AmountTooLarge();
     error RateTooLarge();
     error TimestampTooLarge();
+    error OraclePriceTooLarge();
 
     modifier nonReentrant() {
         if (locked != 1) revert Reentrancy();
@@ -160,8 +161,16 @@ contract Smolpho {
         return SharesMath.toAssetsDown(position[user].supplyShares, market.totalSupplyAssets, market.totalSupplyShares);
     }
 
+    function borrowAssets(address user) external view returns (uint256) {
+        return _borrowAssets(user);
+    }
+
     function availableLiquidity() external view returns (uint256) {
         return market.totalSupplyAssets - market.totalBorrowAssets;
+    }
+
+    function isHealthy(address user) external view returns (bool) {
+        return _isHealthy(user);
     }
 
     function previewSupply(uint256 assets) external view returns (uint256) {
@@ -178,6 +187,23 @@ contract Smolpho {
 
     function previewRepay(uint256 shares) external view returns (uint256) {
         return SharesMath.toAssetsUp(shares, market.totalBorrowAssets, market.totalBorrowShares);
+    }
+
+    function _borrowAssets(address user) internal view returns (uint256) {
+        return SharesMath.toAssetsUp(position[user].borrowShares, market.totalBorrowAssets, market.totalBorrowShares);
+    }
+
+    function _isHealthy(address user) internal view returns (bool) {
+        Position storage userPosition = position[user];
+        if (userPosition.borrowShares == 0) return true;
+
+        uint256 price = oracle.price();
+        if (price > type(uint128).max) revert OraclePriceTooLarge();
+
+        uint256 collateralValue = uint256(userPosition.collateral) * price / WAD;
+        uint256 maxBorrow = collateralValue * lltv / WAD;
+
+        return _borrowAssets(user) <= maxBorrow;
     }
 
     function _toAssets(uint256 value) internal pure returns (uint128) {
