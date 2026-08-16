@@ -88,18 +88,24 @@ contract Smolpho {
         }
 
         if (ratePerSecond_ > type(uint64).max) revert RateTooLarge();
+        // This checks representability, not a security-sensitive time threshold.
+        // forge-lint: disable-next-line(block-timestamp)
         if (block.timestamp > type(uint64).max) revert TimestampTooLarge();
 
         loanToken = loanToken_;
         collateralToken = collateralToken_;
         oracle = oracle_;
         lltv = lltv_;
+        // Safe because ratePerSecond_ was bounded above.
+        // forge-lint: disable-next-line(unsafe-typecast)
         ratePerSecond = uint64(ratePerSecond_);
         liquidationIncentive = liquidationIncentive_;
         market.lastUpdate = uint64(block.timestamp);
     }
 
     function accrueInterest() public returns (uint256 interest) {
+        // This checks representability, not a security-sensitive time threshold.
+        // forge-lint: disable-next-line(block-timestamp)
         if (block.timestamp > type(uint64).max) revert TimestampTooLarge();
 
         uint256 elapsed = block.timestamp - market.lastUpdate;
@@ -148,9 +154,11 @@ contract Smolpho {
 
         if (assets > market.totalSupplyAssets - market.totalBorrowAssets) revert InsufficientLiquidity();
 
-        position[msg.sender].supplyShares -= uint128(shares);
-        market.totalSupplyShares -= uint128(shares);
-        market.totalSupplyAssets -= uint128(assets);
+        uint128 shares128 = _toUint128(shares);
+        uint128 assets128 = _toUint128(assets);
+        position[msg.sender].supplyShares -= shares128;
+        market.totalSupplyShares -= shares128;
+        market.totalSupplyAssets -= assets128;
 
         SafeTransferLib.safeTransfer(loanToken, msg.sender, assets);
 
@@ -208,16 +216,18 @@ contract Smolpho {
 
     function _toAssets(uint256 value) internal pure returns (uint128) {
         if (value > MAX_ASSETS) revert AmountTooLarge();
-        return uint128(value);
+        return _toUint128(value);
     }
 
     function _toShares(uint256 value) internal pure returns (uint128) {
         if (value > MAX_SHARES) revert AmountTooLarge();
-        return uint128(value);
+        return _toUint128(value);
     }
 
     function _toUint128(uint256 value) internal pure returns (uint128) {
         if (value > type(uint128).max) revert AmountTooLarge();
+        // Safe because value was bounded above.
+        // forge-lint: disable-next-line(unsafe-typecast)
         return uint128(value);
     }
 }
