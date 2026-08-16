@@ -9,6 +9,19 @@ vars:
   ABI: indexer/internal/bindings/smolpho.abi.json
   BINDINGS: indexer/internal/bindings/smolpho.go
 
+  # Deterministic local demo configuration. The private key is Anvil's public,
+  # test-only account-zero key and must never be used on a real network.
+  DEMO_ANVIL_HOST: 127.0.0.1
+  DEMO_ANVIL_PORT: 8545
+  DEMO_ANVIL_RPC: "http://{{.DEMO_ANVIL_HOST}}:{{.DEMO_ANVIL_PORT}}"
+  DEMO_USER: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+  DEMO_PRIVATE_KEY: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+  DEMO_LOAN_TOKEN: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+  DEMO_COLLATERAL_TOKEN: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+  DEMO_ORACLE: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+  DEMO_SMOLPHO: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
+  DEMO_SMOLPHO_DEPLOYMENT_BLOCK: 4
+
 tasks:
   build:
     desc: Build contracts, refresh ABI + bindings, and build the indexer
@@ -45,3 +58,113 @@ tasks:
     dir: "{{.INDEXER_DIR}}"
     cmds:
       - go build ./...
+
+  demo:anvil:
+    desc: Start a fresh deterministic Anvil node for the manual indexer demo
+    cmds:
+      - >-
+        anvil
+        --host {{.DEMO_ANVIL_HOST}}
+        --port {{.DEMO_ANVIL_PORT}}
+        --chain-id 31337
+        --quiet
+        --mnemonic "test test test test test test test test test test test junk"
+
+  demo:deploy:
+    desc: Deploy the deterministic demo contracts to a fresh Anvil node
+    dir: "{{.CONTRACTS_DIR}}"
+    cmds:
+      - |
+        nonce="$(cast nonce --rpc-url {{.DEMO_ANVIL_RPC}} {{.DEMO_USER}})"
+        if [ "$nonce" != "0" ]; then
+          echo "demo deployer nonce is $nonce, expected 0; restart Anvil"
+          exit 1
+        fi
+      - >-
+        forge create --broadcast
+        --rpc-url {{.DEMO_ANVIL_RPC}}
+        --private-key {{.DEMO_PRIVATE_KEY}}
+        test/mocks/MockERC20.sol:MockERC20
+        --constructor-args "Loan Token" "LOAN"
+      - >-
+        forge create --broadcast
+        --rpc-url {{.DEMO_ANVIL_RPC}}
+        --private-key {{.DEMO_PRIVATE_KEY}}
+        test/mocks/MockERC20.sol:MockERC20
+        --constructor-args "Collateral Token" "COLL"
+      - >-
+        forge create --broadcast
+        --rpc-url {{.DEMO_ANVIL_RPC}}
+        --private-key {{.DEMO_PRIVATE_KEY}}
+        test/mocks/MockOracle.sol:MockOracle
+        --constructor-args 1000000000000000000
+      - >-
+        forge create --broadcast
+        --rpc-url {{.DEMO_ANVIL_RPC}}
+        --private-key {{.DEMO_PRIVATE_KEY}}
+        src/Smolpho.sol:Smolpho
+        --constructor-args
+        {{.DEMO_LOAN_TOKEN}}
+        {{.DEMO_COLLATERAL_TOKEN}}
+        {{.DEMO_ORACLE}}
+        800000000000000000
+        0
+        1100000000000000000
+      - |
+        code="$(cast code --rpc-url {{.DEMO_ANVIL_RPC}} {{.DEMO_SMOLPHO}})"
+        block="$(cast block-number --rpc-url {{.DEMO_ANVIL_RPC}})"
+        if [ "$code" = "0x" ] || [ "$block" != "{{.DEMO_SMOLPHO_DEPLOYMENT_BLOCK}}" ]; then
+          echo "unexpected deployment result; restart Anvil and run demo:deploy again"
+          exit 1
+        fi
+        echo "Smolpho deployed at {{.DEMO_SMOLPHO}} in block $block"
+
+  demo:indexer:
+    desc: Follow the deterministic Anvil deployment and print indexed state
+    dir: "{{.INDEXER_DIR}}"
+    cmds:
+      - |
+        code="$(cast code --rpc-url {{.DEMO_ANVIL_RPC}} {{.DEMO_SMOLPHO}})"
+        if [ "$code" = "0x" ]; then
+          echo "Smolpho is not deployed; run demo:deploy first"
+          exit 1
+        fi
+      - >-
+        go run ./cmd/indexer
+        -rpc {{.DEMO_ANVIL_RPC}}
+        -contract {{.DEMO_SMOLPHO}}
+        -deployment-block {{.DEMO_SMOLPHO_DEPLOYMENT_BLOCK}}
+        -interval 250ms
+        -follow
+
+  demo:scenario:
+    desc: Send a paced supply, collateral, and withdrawal scenario to Anvil
+    cmds:
+      - echo "Minting 1,000 loan tokens"
+      - >-
+        cast send --quiet --rpc-url {{.DEMO_ANVIL_RPC}} --private-key {{.DEMO_PRIVATE_KEY}}
+        {{.DEMO_LOAN_TOKEN}} "mint(address,uint256)" {{.DEMO_USER}} 1000000000000000000000
+      - echo "Approving and supplying 100 loan tokens"
+      - >-
+        cast send --quiet --rpc-url {{.DEMO_ANVIL_RPC}} --private-key {{.DEMO_PRIVATE_KEY}}
+        {{.DEMO_LOAN_TOKEN}} "approve(address,uint256)" {{.DEMO_SMOLPHO}} 100000000000000000000
+      - >-
+        cast send --quiet --rpc-url {{.DEMO_ANVIL_RPC}} --private-key {{.DEMO_PRIVATE_KEY}}
+        {{.DEMO_SMOLPHO}} "supply(uint256)" 100000000000000000000
+      - sleep 1
+      - echo "Minting, approving, and supplying 20 collateral tokens"
+      - >-
+        cast send --quiet --rpc-url {{.DEMO_ANVIL_RPC}} --private-key {{.DEMO_PRIVATE_KEY}}
+        {{.DEMO_COLLATERAL_TOKEN}} "mint(address,uint256)" {{.DEMO_USER}} 20000000000000000000
+      - >-
+        cast send --quiet --rpc-url {{.DEMO_ANVIL_RPC}} --private-key {{.DEMO_PRIVATE_KEY}}
+        {{.DEMO_COLLATERAL_TOKEN}} "approve(address,uint256)" {{.DEMO_SMOLPHO}} 20000000000000000000
+      - >-
+        cast send --quiet --rpc-url {{.DEMO_ANVIL_RPC}} --private-key {{.DEMO_PRIVATE_KEY}}
+        {{.DEMO_SMOLPHO}} "supplyCollateral(uint256)" 20000000000000000000
+      - sleep 1
+      - echo "Withdrawing half of the minted supply shares"
+      - >-
+        cast send --quiet --rpc-url {{.DEMO_ANVIL_RPC}} --private-key {{.DEMO_PRIVATE_KEY}}
+        {{.DEMO_SMOLPHO}} "withdraw(uint256)" 50000000000000000000000000
+      - sleep 1
