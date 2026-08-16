@@ -22,11 +22,11 @@ func printState(output io.Writer, st *store.Store) {
 	st.Read(func(s *state.State, checkpoint store.Checkpoint) {
 		m := s.Market
 		fmt.Fprintf(output, "\n=== market @ block %d (%s) ===\n", checkpoint.Number, checkpoint.Hash.Hex())
-		fmt.Fprintf(output, "  totalSupplyAssets: %s\n", m.TotalSupplyAssets)
-		fmt.Fprintf(output, "  totalSupplyShares: %s\n", m.TotalSupplyShares)
-		fmt.Fprintf(output, "  totalBorrowAssets: %s\n", m.TotalBorrowAssets)
-		fmt.Fprintf(output, "  totalBorrowShares: %s\n", m.TotalBorrowShares)
-		fmt.Fprintf(output, "  lastUpdate: %s\n", m.LastUpdate)
+		fmt.Fprintf(output, "  totalSupplyAssets: %s\n", formatInt(m.TotalSupplyAssets))
+		fmt.Fprintf(output, "  totalSupplyShares: %s\n", formatInt(m.TotalSupplyShares))
+		fmt.Fprintf(output, "  totalBorrowAssets: %s\n", formatInt(m.TotalBorrowAssets))
+		fmt.Fprintf(output, "  totalBorrowShares: %s\n", formatInt(m.TotalBorrowShares))
+		fmt.Fprintf(output, "  lastUpdate: %s\n", formatInt(m.LastUpdate))
 		fmt.Fprintf(output, "  supply share price: %s\n", supplySharePrice(m))
 		if len(s.Positions) == 0 {
 			fmt.Fprintln(output, "  (no positions)")
@@ -41,9 +41,37 @@ func printState(output io.Writer, st *store.Store) {
 		for _, user := range users {
 			p := s.Positions[user]
 			fmt.Fprintf(output, "    %s  supplyShares=%s  supplyAssets=%s  collateral=%s\n",
-				user, p.SupplyShares, s.SupplyAssets(user), p.Collateral)
+				user,
+				formatInt(p.SupplyShares),
+				formatInt(s.SupplyAssets(user)),
+				formatInt(p.Collateral),
+			)
 		}
 	})
+}
+
+func formatInt(value *big.Int) string {
+	digits := value.String()
+	sign := ""
+	if digits[0] == '-' {
+		sign = "-"
+		digits = digits[1:]
+	}
+
+	firstGroup := len(digits) % 3
+	if firstGroup == 0 {
+		firstGroup = 3
+	}
+
+	var formatted strings.Builder
+	formatted.Grow(len(sign) + len(digits) + (len(digits)-1)/3)
+	formatted.WriteString(sign)
+	formatted.WriteString(digits[:firstGroup])
+	for offset := firstGroup; offset < len(digits); offset += 3 {
+		formatted.WriteByte('_')
+		formatted.WriteString(digits[offset : offset+3])
+	}
+	return formatted.String()
 }
 
 func supplySharePrice(m state.Market) string {
