@@ -48,6 +48,14 @@ contract Smolpho {
     event CollateralWithdrawn(address indexed user, uint256 assets);
     event Borrowed(address indexed user, uint256 assets, uint256 shares);
     event Repaid(address indexed user, uint256 assets, uint256 shares);
+    event Liquidated(
+        address indexed liquidator,
+        address indexed borrower,
+        uint256 repaidAssets,
+        uint256 repaidShares,
+        uint256 seizedCollateral
+    );
+    event BadDebtRealized(address indexed borrower, uint256 badDebtAssets, uint256 badDebtShares);
 
     error ZeroAddress();
     error ZeroAssets();
@@ -57,6 +65,7 @@ contract Smolpho {
     error InsufficientCollateral();
     error InsufficientLiquidity();
     error UnhealthyPosition();
+    error HealthyPosition();
     error Reentrancy();
     error SameToken();
     error InvalidLltv();
@@ -202,6 +211,52 @@ contract Smolpho {
         emit Repaid(msg.sender, assets, shares);
     }
 
+    function liquidate(address borrower, uint256 repaidShares)
+        external
+        nonReentrant
+        returns (uint256 repaidAssets, uint256 seizedCollateral, uint256 badDebtAssets)
+    {
+        accrueInterest();
+
+        Position storage borrowerPosition = position[borrower];
+        if (borrowerPosition.borrowShares == 0) revert HealthyPosition();
+
+        uint256 price = _oraclePrice();
+        if (_isHealthy(borrower, price)) revert HealthyPosition();
+        if (repaidShares == 0) revert ZeroShares();
+        if (repaidShares > borrowerPosition.borrowShares) revert InsufficientBorrowShares();
+
+        repaidAssets = SharesMath.toAssetsUp(repaidShares, market.totalBorrowAssets, market.totalBorrowShares);
+        seizedCollateral = price == 0 ? borrowerPosition.collateral : repaidAssets * liquidationIncentive / price;
+        if (seizedCollateral > borrowerPosition.collateral) seizedCollateral = borrowerPosition.collateral;
+
+        uint128 repaidShares128 = _toUint128(repaidShares);
+        borrowerPosition.borrowShares -= repaidShares128;
+        borrowerPosition.collateral -= _toUint128(seizedCollateral);
+        market.totalBorrowShares -= repaidShares128;
+        market.totalBorrowAssets =
+            repaidAssets >= market.totalBorrowAssets ? 0 : market.totalBorrowAssets - _toUint128(repaidAssets);
+
+        uint256 badDebtShares;
+        if (borrowerPosition.collateral == 0 && borrowerPosition.borrowShares != 0) {
+            badDebtShares = borrowerPosition.borrowShares;
+            badDebtAssets = SharesMath.toAssetsUp(badDebtShares, market.totalBorrowAssets, market.totalBorrowShares);
+
+            borrowerPosition.borrowShares = 0;
+            market.totalBorrowShares -= _toUint128(badDebtShares);
+            market.totalBorrowAssets =
+                badDebtAssets >= market.totalBorrowAssets ? 0 : market.totalBorrowAssets - _toUint128(badDebtAssets);
+            market.totalSupplyAssets =
+                badDebtAssets >= market.totalSupplyAssets ? 0 : market.totalSupplyAssets - _toUint128(badDebtAssets);
+        }
+
+        SafeTransferLib.safeTransferFrom(loanToken, msg.sender, address(this), repaidAssets);
+        SafeTransferLib.safeTransfer(collateralToken, msg.sender, seizedCollateral);
+
+        emit Liquidated(msg.sender, borrower, repaidAssets, repaidShares, seizedCollateral);
+        if (badDebtShares != 0) emit BadDebtRealized(borrower, badDebtAssets, badDebtShares);
+    }
+
     function withdraw(uint256 shares) external nonReentrant returns (uint256 assets) {
         if (shares == 0) revert ZeroShares();
         if (shares > position[msg.sender].supplyShares) revert InsufficientSupplyShares();
@@ -259,16 +314,20 @@ contract Smolpho {
     }
 
     function _isHealthy(address user) internal view returns (bool) {
-        Position storage userPosition = position[user];
-        if (userPosition.borrowShares == 0) return true;
+        if (position[user].borrowShares == 0) return true;
+        return _isHealthy(user, _oraclePrice());
+    }
 
-        uint256 price = oracle.price();
-        if (price > type(uint128).max) revert OraclePriceTooLarge();
-
-        uint256 collateralValue = uint256(userPosition.collateral) * price / WAD;
+    function _isHealthy(address user, uint256 price) internal view returns (bool) {
+        uint256 collateralValue = uint256(position[user].collateral) * price / WAD;
         uint256 maxBorrow = collateralValue * lltv / WAD;
 
         return _borrowAssets(user) <= maxBorrow;
+    }
+
+    function _oraclePrice() internal view returns (uint256 price) {
+        price = oracle.price();
+        if (price > type(uint128).max) revert OraclePriceTooLarge();
     }
 
     function _toAssets(uint256 value) internal pure returns (uint128) {
