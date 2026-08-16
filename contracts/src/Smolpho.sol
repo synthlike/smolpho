@@ -34,6 +34,8 @@ contract Smolpho {
     Market public market;
     mapping(address => Position) public position;
 
+    event InterestAccrued(uint256 elapsed, uint256 interest);
+
     error ZeroAddress();
     error SameToken();
     error InvalidLltv();
@@ -66,6 +68,17 @@ contract Smolpho {
         ratePerSecond = ratePerSecond_;
         liquidationIncentive = liquidationIncentive_;
         market.lastUpdate = block.timestamp;
+    }
+
+    function accrueInterest() public returns (uint256 interest) {
+        uint256 elapsed = block.timestamp - market.lastUpdate;
+        interest = market.totalBorrowAssets * ratePerSecond * elapsed / WAD;
+
+        market.totalBorrowAssets += interest;
+        market.totalSupplyAssets += interest;
+        market.lastUpdate = block.timestamp;
+
+        emit InterestAccrued(elapsed, interest);
     }
 
     function previewSupply(uint256 assets) external view returns (uint256) {
