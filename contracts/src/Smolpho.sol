@@ -3,9 +3,12 @@ pragma solidity ^0.8.13;
 
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IPriceOracle} from "./interfaces/IPriceOracle.sol";
+import {SharesMath} from "./libraries/SharesMath.sol";
 
 contract Smolpho {
     uint256 public constant WAD = 1e18;
+    uint256 public constant VIRTUAL_ASSETS = 1;
+    uint256 public constant VIRTUAL_SHARES = 1e6;
 
     IERC20 public immutable loanToken;
     IERC20 public immutable collateralToken;
@@ -45,9 +48,8 @@ contract Smolpho {
         uint256 liquidationIncentive_
     ) {
         if (
-            address(loanToken_) == address(0) ||
-            address(collateralToken_) == address(0) ||
-            address(oracle_) == address(0)
+            address(loanToken_) == address(0) || address(collateralToken_) == address(0)
+                || address(oracle_) == address(0)
         ) {
             revert ZeroAddress();
         }
@@ -64,5 +66,21 @@ contract Smolpho {
         ratePerSecond = ratePerSecond_;
         liquidationIncentive = liquidationIncentive_;
         market.lastUpdate = block.timestamp;
+    }
+
+    function previewSupply(uint256 assets) external view returns (uint256) {
+        return SharesMath.toSharesDown(assets, market.totalSupplyAssets, market.totalSupplyShares);
+    }
+
+    function previewWithdraw(uint256 shares) external view returns (uint256) {
+        return SharesMath.toAssetsDown(shares, market.totalSupplyAssets, market.totalSupplyShares);
+    }
+
+    function previewBorrow(uint256 assets) external view returns (uint256) {
+        return SharesMath.toSharesUp(assets, market.totalBorrowAssets, market.totalBorrowShares);
+    }
+
+    function previewRepay(uint256 shares) external view returns (uint256) {
+        return SharesMath.toAssetsUp(shares, market.totalBorrowAssets, market.totalBorrowShares);
     }
 }
