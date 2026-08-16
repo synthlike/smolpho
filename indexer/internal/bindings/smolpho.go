@@ -30,7 +30,7 @@ var (
 
 // SmolphoMetaData contains all meta data concerning the Smolpho contract.
 var SmolphoMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"loanToken_\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"collateralToken_\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"oracle_\",\"type\":\"address\",\"internalType\":\"contractIPriceOracle\"},{\"name\":\"lltv_\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"ratePerSecond_\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"liquidationIncentive_\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"VIRTUAL_ASSETS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"VIRTUAL_SHARES\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"WAD\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"accrueInterest\",\"inputs\":[],\"outputs\":[{\"name\":\"interest\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"availableLiquidity\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"borrowAssets\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"collateralToken\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isHealthy\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"liquidationIncentive\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"lltv\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"loanToken\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"market\",\"inputs\":[],\"outputs\":[{\"name\":\"totalSupplyAssets\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"totalSupplyShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"totalBorrowAssets\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"totalBorrowShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"lastUpdate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"oracle\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPriceOracle\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"position\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"supplyShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"borrowShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"collateral\",\"type\":\"uint128\",\"internalType\":\"uint128\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewBorrow\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewRepay\",\"inputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewSupply\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewWithdraw\",\"inputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ratePerSecond\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"supply\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"supplyAssets\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"supplyCollateral\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdraw\",\"inputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"CollateralSupplied\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InterestAccrued\",\"inputs\":[{\"name\":\"elapsed\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"interest\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Supplied\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Withdrawn\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AmountTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientLiquidity\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientSupplyShares\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidLiquidationIncentive\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidLltv\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OraclePriceTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"RateTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Reentrancy\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SameToken\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TimestampTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TransferFailed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroAssets\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroShares\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"loanToken_\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"collateralToken_\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"oracle_\",\"type\":\"address\",\"internalType\":\"contractIPriceOracle\"},{\"name\":\"lltv_\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"ratePerSecond_\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"liquidationIncentive_\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"VIRTUAL_ASSETS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"VIRTUAL_SHARES\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"WAD\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"accrueInterest\",\"inputs\":[],\"outputs\":[{\"name\":\"interest\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"availableLiquidity\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"borrow\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"borrowAssets\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"collateralToken\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isHealthy\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"liquidationIncentive\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"lltv\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"loanToken\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"market\",\"inputs\":[],\"outputs\":[{\"name\":\"totalSupplyAssets\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"totalSupplyShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"totalBorrowAssets\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"totalBorrowShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"lastUpdate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"oracle\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPriceOracle\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"position\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"supplyShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"borrowShares\",\"type\":\"uint128\",\"internalType\":\"uint128\"},{\"name\":\"collateral\",\"type\":\"uint128\",\"internalType\":\"uint128\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewBorrow\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewRepay\",\"inputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewSupply\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"previewWithdraw\",\"inputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ratePerSecond\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"supply\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"supplyAssets\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"supplyCollateral\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdraw\",\"inputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawCollateral\",\"inputs\":[{\"name\":\"assets\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Borrowed\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"CollateralSupplied\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"CollateralWithdrawn\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InterestAccrued\",\"inputs\":[{\"name\":\"elapsed\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"interest\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Supplied\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Withdrawn\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"assets\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AmountTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientCollateral\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientLiquidity\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientSupplyShares\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidLiquidationIncentive\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidLltv\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OraclePriceTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"RateTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Reentrancy\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SameToken\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TimestampTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TransferFailed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UnhealthyPosition\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroAssets\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroShares\",\"inputs\":[]}]",
 }
 
 // SmolphoABI is the input ABI used to generate the binding from.
@@ -837,6 +837,27 @@ func (_Smolpho *SmolphoTransactorSession) AccrueInterest() (*types.Transaction, 
 	return _Smolpho.Contract.AccrueInterest(&_Smolpho.TransactOpts)
 }
 
+// Borrow is a paid mutator transaction binding the contract method 0xc5ebeaec.
+//
+// Solidity: function borrow(uint256 assets) returns(uint256 shares)
+func (_Smolpho *SmolphoTransactor) Borrow(opts *bind.TransactOpts, assets *big.Int) (*types.Transaction, error) {
+	return _Smolpho.contract.Transact(opts, "borrow", assets)
+}
+
+// Borrow is a paid mutator transaction binding the contract method 0xc5ebeaec.
+//
+// Solidity: function borrow(uint256 assets) returns(uint256 shares)
+func (_Smolpho *SmolphoSession) Borrow(assets *big.Int) (*types.Transaction, error) {
+	return _Smolpho.Contract.Borrow(&_Smolpho.TransactOpts, assets)
+}
+
+// Borrow is a paid mutator transaction binding the contract method 0xc5ebeaec.
+//
+// Solidity: function borrow(uint256 assets) returns(uint256 shares)
+func (_Smolpho *SmolphoTransactorSession) Borrow(assets *big.Int) (*types.Transaction, error) {
+	return _Smolpho.Contract.Borrow(&_Smolpho.TransactOpts, assets)
+}
+
 // Supply is a paid mutator transaction binding the contract method 0x35403023.
 //
 // Solidity: function supply(uint256 assets) returns(uint256 shares)
@@ -898,6 +919,173 @@ func (_Smolpho *SmolphoSession) Withdraw(shares *big.Int) (*types.Transaction, e
 // Solidity: function withdraw(uint256 shares) returns(uint256 assets)
 func (_Smolpho *SmolphoTransactorSession) Withdraw(shares *big.Int) (*types.Transaction, error) {
 	return _Smolpho.Contract.Withdraw(&_Smolpho.TransactOpts, shares)
+}
+
+// WithdrawCollateral is a paid mutator transaction binding the contract method 0x6112fe2e.
+//
+// Solidity: function withdrawCollateral(uint256 assets) returns()
+func (_Smolpho *SmolphoTransactor) WithdrawCollateral(opts *bind.TransactOpts, assets *big.Int) (*types.Transaction, error) {
+	return _Smolpho.contract.Transact(opts, "withdrawCollateral", assets)
+}
+
+// WithdrawCollateral is a paid mutator transaction binding the contract method 0x6112fe2e.
+//
+// Solidity: function withdrawCollateral(uint256 assets) returns()
+func (_Smolpho *SmolphoSession) WithdrawCollateral(assets *big.Int) (*types.Transaction, error) {
+	return _Smolpho.Contract.WithdrawCollateral(&_Smolpho.TransactOpts, assets)
+}
+
+// WithdrawCollateral is a paid mutator transaction binding the contract method 0x6112fe2e.
+//
+// Solidity: function withdrawCollateral(uint256 assets) returns()
+func (_Smolpho *SmolphoTransactorSession) WithdrawCollateral(assets *big.Int) (*types.Transaction, error) {
+	return _Smolpho.Contract.WithdrawCollateral(&_Smolpho.TransactOpts, assets)
+}
+
+// SmolphoBorrowedIterator is returned from FilterBorrowed and is used to iterate over the raw logs and unpacked data for Borrowed events raised by the Smolpho contract.
+type SmolphoBorrowedIterator struct {
+	Event *SmolphoBorrowed // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *SmolphoBorrowedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(SmolphoBorrowed)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(SmolphoBorrowed)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *SmolphoBorrowedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *SmolphoBorrowedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// SmolphoBorrowed represents a Borrowed event raised by the Smolpho contract.
+type SmolphoBorrowed struct {
+	User   common.Address
+	Assets *big.Int
+	Shares *big.Int
+	Raw    types.Log // Blockchain specific contextual infos
+}
+
+// FilterBorrowed is a free log retrieval operation binding the contract event 0xeae9cfbc77fdd40ca899f36b608256063b2bc9d8178b0220f7ad513e178d6730.
+//
+// Solidity: event Borrowed(address indexed user, uint256 assets, uint256 shares)
+func (_Smolpho *SmolphoFilterer) FilterBorrowed(opts *bind.FilterOpts, user []common.Address) (*SmolphoBorrowedIterator, error) {
+
+	var userRule []interface{}
+	for _, userItem := range user {
+		userRule = append(userRule, userItem)
+	}
+
+	logs, sub, err := _Smolpho.contract.FilterLogs(opts, "Borrowed", userRule)
+	if err != nil {
+		return nil, err
+	}
+	return &SmolphoBorrowedIterator{contract: _Smolpho.contract, event: "Borrowed", logs: logs, sub: sub}, nil
+}
+
+// WatchBorrowed is a free log subscription operation binding the contract event 0xeae9cfbc77fdd40ca899f36b608256063b2bc9d8178b0220f7ad513e178d6730.
+//
+// Solidity: event Borrowed(address indexed user, uint256 assets, uint256 shares)
+func (_Smolpho *SmolphoFilterer) WatchBorrowed(opts *bind.WatchOpts, sink chan<- *SmolphoBorrowed, user []common.Address) (event.Subscription, error) {
+
+	var userRule []interface{}
+	for _, userItem := range user {
+		userRule = append(userRule, userItem)
+	}
+
+	logs, sub, err := _Smolpho.contract.WatchLogs(opts, "Borrowed", userRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(SmolphoBorrowed)
+				if err := _Smolpho.contract.UnpackLog(event, "Borrowed", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseBorrowed is a log parse operation binding the contract event 0xeae9cfbc77fdd40ca899f36b608256063b2bc9d8178b0220f7ad513e178d6730.
+//
+// Solidity: event Borrowed(address indexed user, uint256 assets, uint256 shares)
+func (_Smolpho *SmolphoFilterer) ParseBorrowed(log types.Log) (*SmolphoBorrowed, error) {
+	event := new(SmolphoBorrowed)
+	if err := _Smolpho.contract.UnpackLog(event, "Borrowed", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
 }
 
 // SmolphoCollateralSuppliedIterator is returned from FilterCollateralSupplied and is used to iterate over the raw logs and unpacked data for CollateralSupplied events raised by the Smolpho contract.
@@ -1039,6 +1227,151 @@ func (_Smolpho *SmolphoFilterer) WatchCollateralSupplied(opts *bind.WatchOpts, s
 func (_Smolpho *SmolphoFilterer) ParseCollateralSupplied(log types.Log) (*SmolphoCollateralSupplied, error) {
 	event := new(SmolphoCollateralSupplied)
 	if err := _Smolpho.contract.UnpackLog(event, "CollateralSupplied", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// SmolphoCollateralWithdrawnIterator is returned from FilterCollateralWithdrawn and is used to iterate over the raw logs and unpacked data for CollateralWithdrawn events raised by the Smolpho contract.
+type SmolphoCollateralWithdrawnIterator struct {
+	Event *SmolphoCollateralWithdrawn // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *SmolphoCollateralWithdrawnIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(SmolphoCollateralWithdrawn)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(SmolphoCollateralWithdrawn)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *SmolphoCollateralWithdrawnIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *SmolphoCollateralWithdrawnIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// SmolphoCollateralWithdrawn represents a CollateralWithdrawn event raised by the Smolpho contract.
+type SmolphoCollateralWithdrawn struct {
+	User   common.Address
+	Assets *big.Int
+	Raw    types.Log // Blockchain specific contextual infos
+}
+
+// FilterCollateralWithdrawn is a free log retrieval operation binding the contract event 0xc30fcfbcaac9e0deffa719714eaa82396ff506a0d0d0eebe170830177288715d.
+//
+// Solidity: event CollateralWithdrawn(address indexed user, uint256 assets)
+func (_Smolpho *SmolphoFilterer) FilterCollateralWithdrawn(opts *bind.FilterOpts, user []common.Address) (*SmolphoCollateralWithdrawnIterator, error) {
+
+	var userRule []interface{}
+	for _, userItem := range user {
+		userRule = append(userRule, userItem)
+	}
+
+	logs, sub, err := _Smolpho.contract.FilterLogs(opts, "CollateralWithdrawn", userRule)
+	if err != nil {
+		return nil, err
+	}
+	return &SmolphoCollateralWithdrawnIterator{contract: _Smolpho.contract, event: "CollateralWithdrawn", logs: logs, sub: sub}, nil
+}
+
+// WatchCollateralWithdrawn is a free log subscription operation binding the contract event 0xc30fcfbcaac9e0deffa719714eaa82396ff506a0d0d0eebe170830177288715d.
+//
+// Solidity: event CollateralWithdrawn(address indexed user, uint256 assets)
+func (_Smolpho *SmolphoFilterer) WatchCollateralWithdrawn(opts *bind.WatchOpts, sink chan<- *SmolphoCollateralWithdrawn, user []common.Address) (event.Subscription, error) {
+
+	var userRule []interface{}
+	for _, userItem := range user {
+		userRule = append(userRule, userItem)
+	}
+
+	logs, sub, err := _Smolpho.contract.WatchLogs(opts, "CollateralWithdrawn", userRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(SmolphoCollateralWithdrawn)
+				if err := _Smolpho.contract.UnpackLog(event, "CollateralWithdrawn", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseCollateralWithdrawn is a log parse operation binding the contract event 0xc30fcfbcaac9e0deffa719714eaa82396ff506a0d0d0eebe170830177288715d.
+//
+// Solidity: event CollateralWithdrawn(address indexed user, uint256 assets)
+func (_Smolpho *SmolphoFilterer) ParseCollateralWithdrawn(log types.Log) (*SmolphoCollateralWithdrawn, error) {
+	event := new(SmolphoCollateralWithdrawn)
+	if err := _Smolpho.contract.UnpackLog(event, "CollateralWithdrawn", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
