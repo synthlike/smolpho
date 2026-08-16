@@ -40,8 +40,14 @@ go run ./cmd/indexer-api \
   -contract 0x5FbDB2315678afecb367f032d93F642f64180aa3 \
   -deployment-block 1 \
   -database smolpho-indexer.sqlite \
-  -listen 127.0.0.1:8080
+  -listen 127.0.0.1:8080 \
+  -cors-origin http://localhost:5173
 ```
+
+`-cors-origin` enables browser access for that exact origin. The flag may be
+repeated to allow multiple frontends and may be omitted when the frontend and
+API are served from the same origin. Origins include the scheme, host, and
+optional port, with no trailing slash.
 
 The API worker follows by default and resumes from its durable SQLite
 checkpoint after a restart. Pass `-follow=false` for a one-shot backfill. Use a
@@ -68,6 +74,8 @@ state. Hidden progress also survives a process restart.
 The API serves:
 
 - `GET /healthz` — process liveness;
+- `GET /api/v1/config` — chain and deployment identity, token and oracle
+  addresses, LLTV, interest rate, and liquidation incentive;
 - `GET /api/v1/status` — chain head, lag, sync/rebuild flags, published and
   working checkpoints, last error, and last successful synchronization;
 - `GET /api/v1/market` — published market totals; and
@@ -78,6 +86,7 @@ For example:
 
 ```sh
 curl http://127.0.0.1:8080/api/v1/status | jq
+curl http://127.0.0.1:8080/api/v1/config | jq
 curl http://127.0.0.1:8080/api/v1/market | jq
 curl http://127.0.0.1:8080/api/v1/positions/0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266 | jq
 ```

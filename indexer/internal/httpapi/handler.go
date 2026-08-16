@@ -15,18 +15,35 @@ import (
 )
 
 type api struct {
-	store  storage.Store
-	status *StatusTracker
+	store         storage.Store
+	status        *StatusTracker
+	configuration MarketConfig
+}
+
+// MarketConfig identifies the indexed deployment and its immutable market
+// parameters. Numeric values are decimal strings so JavaScript clients can
+// parse them without losing precision.
+type MarketConfig struct {
+	ChainID              string `json:"chainId"`
+	ContractAddress      string `json:"contractAddress"`
+	DeploymentBlock      string `json:"deploymentBlock"`
+	LoanToken            string `json:"loanToken"`
+	CollateralToken      string `json:"collateralToken"`
+	Oracle               string `json:"oracle"`
+	LLTV                 string `json:"lltv"`
+	RatePerSecond        string `json:"ratePerSecond"`
+	LiquidationIncentive string `json:"liquidationIncentive"`
 }
 
 // NewHandler constructs the complete read-only API handler.
-func NewHandler(store storage.Store, status *StatusTracker) http.Handler {
+func NewHandler(store storage.Store, status *StatusTracker, configuration MarketConfig) http.Handler {
 	if status == nil {
 		status = NewStatusTracker()
 	}
-	a := &api{store: store, status: status}
+	a := &api{store: store, status: status, configuration: configuration}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", a.health)
+	mux.HandleFunc("GET /api/v1/config", a.config)
 	mux.HandleFunc("GET /api/v1/status", a.indexerStatus)
 	mux.HandleFunc("GET /api/v1/market", a.market)
 	mux.HandleFunc("GET /api/v1/positions/{address}", a.position)
@@ -75,6 +92,10 @@ type positionResponse struct {
 
 func (a *api) health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (a *api) config(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, a.configuration)
 }
 
 func (a *api) indexerStatus(w http.ResponseWriter, r *http.Request) {

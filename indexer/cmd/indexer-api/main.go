@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+	var corsOrigins []string
 	rpc := flag.String("rpc", "http://localhost:8545", "Ethereum RPC endpoint")
 	contract := flag.String("contract", "", "Smolpho contract address (required)")
 	deploymentBlock := flag.Uint64("deployment-block", 0, "Smolpho deployment block (required)")
@@ -21,6 +22,10 @@ func main() {
 	follow := flag.Bool("follow", true, "keep polling for new blocks after backfill")
 	interval := flag.Duration("interval", 2*time.Second, "poll interval when following")
 	batchSize := flag.Uint64("batch-size", 2_000, "maximum blocks per log query")
+	flag.Func("cors-origin", "allowed browser origin; may be repeated", func(origin string) error {
+		corsOrigins = append(corsOrigins, origin)
+		return nil
+	})
 	flag.Parse()
 
 	var deploymentBlockValue *uint64
@@ -42,8 +47,9 @@ func main() {
 			Interval:        *interval,
 			BatchSize:       *batchSize,
 		},
-		Database: *database,
-		Listen:   *listen,
+		Database:    *database,
+		Listen:      *listen,
+		CORSOrigins: corsOrigins,
 	})
 	if err != nil {
 		log.Fatal(err)

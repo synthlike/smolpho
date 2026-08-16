@@ -22,6 +22,7 @@ vars:
   DEMO_SMOLPHO: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
   DEMO_SMOLPHO_DEPLOYMENT_BLOCK: 4
   DEMO_API_LISTEN: "127.0.0.1:8080"
+  DEMO_API_CORS_ORIGIN: "http://localhost:5173"
   DEMO_API_DATABASE: "smolpho-indexer.sqlite"
 
 tasks:
@@ -156,6 +157,7 @@ tasks:
         -deployment-block {{.DEMO_SMOLPHO_DEPLOYMENT_BLOCK}}
         -database {{.DEMO_API_DATABASE}}
         -listen {{.DEMO_API_LISTEN}}
+        -cors-origin {{.DEMO_API_CORS_ORIGIN}}
         -interval 250ms
         -follow
 

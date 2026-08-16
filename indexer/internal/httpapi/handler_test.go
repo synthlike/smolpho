@@ -18,17 +18,30 @@ import (
 
 const testAddress = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
 
+var testMarketConfig = MarketConfig{
+	ChainID:              "31337",
+	ContractAddress:      "0x0000000000000000000000000000000000000010",
+	DeploymentBlock:      "4",
+	LoanToken:            "0x0000000000000000000000000000000000000020",
+	CollateralToken:      "0x0000000000000000000000000000000000000030",
+	Oracle:               "0x0000000000000000000000000000000000000040",
+	LLTV:                 "800000000000000000",
+	RatePerSecond:        "1",
+	LiquidationIncentive: "1100000000000000000",
+}
+
 func TestEndpoints(t *testing.T) {
 	store := publishedStore(t)
 	status := NewStatusTracker()
 	status.Observe(smolphoindexer.SyncStatus{Head: 12, HeadKnown: true})
-	handler := NewHandler(store, status)
+	handler := NewHandler(store, status, testMarketConfig)
 
 	tests := []struct {
 		path string
 		want []string
 	}{
 		{path: "/healthz", want: []string{`"status":"ok"`}},
+		{path: "/api/v1/config", want: []string{`"chainId":"31337"`, `"deploymentBlock":"4"`, `"lltv":"800000000000000000"`}},
 		{path: "/api/v1/status", want: []string{`"caughtUp":true`, `"chainHead":"12"`}},
 		{path: "/api/v1/market", want: []string{`"totalSupplyAssets":"50"`, `"totalBorrowAssets":"8"`}},
 		{path: "/api/v1/positions/" + testAddress, want: []string{`"supplyAssets":"50"`, `"borrowAssets":"8"`}},
@@ -49,8 +62,8 @@ func TestEndpoints(t *testing.T) {
 }
 
 func TestEndpointStatusCodes(t *testing.T) {
-	ready := NewHandler(publishedStore(t), nil)
-	notReady := NewHandler(memory.New(0), nil)
+	ready := NewHandler(publishedStore(t), nil, testMarketConfig)
+	notReady := NewHandler(memory.New(0), nil, testMarketConfig)
 	tests := []struct {
 		name    string
 		handler http.Handler
