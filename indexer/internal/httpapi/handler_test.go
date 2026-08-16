@@ -44,6 +44,7 @@ func TestEndpoints(t *testing.T) {
 		{path: "/api/v1/config", want: []string{`"chainId":"31337"`, `"deploymentBlock":"4"`, `"lltv":"800000000000000000"`}},
 		{path: "/api/v1/status", want: []string{`"caughtUp":true`, `"chainHead":"12"`}},
 		{path: "/api/v1/market", want: []string{`"totalSupplyAssets":"50"`, `"totalBorrowAssets":"8"`}},
+		{path: "/api/v1/positions", want: []string{`"total":"2"`, `"address":"0x0000000000000000000000000000000000000002"`}},
 		{path: "/api/v1/positions/" + testAddress, want: []string{`"supplyAssets":"50"`, `"borrowAssets":"8"`}},
 	}
 	for _, test := range tests {
@@ -72,6 +73,9 @@ func TestEndpointStatusCodes(t *testing.T) {
 		status  int
 	}{
 		{name: "initial backfill", handler: notReady, method: http.MethodGet, path: "/api/v1/market", status: http.StatusServiceUnavailable},
+		{name: "positions initial backfill", handler: notReady, method: http.MethodGet, path: "/api/v1/positions", status: http.StatusServiceUnavailable},
+		{name: "invalid positions limit", handler: ready, method: http.MethodGet, path: "/api/v1/positions?limit=0", status: http.StatusBadRequest},
+		{name: "invalid positions cursor", handler: ready, method: http.MethodGet, path: "/api/v1/positions?cursor=nope", status: http.StatusBadRequest},
 		{name: "invalid address", handler: ready, method: http.MethodGet, path: "/api/v1/positions/nope", status: http.StatusBadRequest},
 		{name: "missing position", handler: ready, method: http.MethodGet, path: "/api/v1/positions/0x0000000000000000000000000000000000000001", status: http.StatusNotFound},
 		{name: "wrong method", handler: ready, method: http.MethodPost, path: "/api/v1/market", status: http.StatusMethodNotAllowed},
@@ -86,6 +90,34 @@ func TestEndpointStatusCodes(t *testing.T) {
 	}
 }
 
+func TestPositionsPagination(t *testing.T) {
+	handler := NewHandler(publishedStore(t), nil, testMarketConfig)
+	first := request(handler, http.MethodGet, "/api/v1/positions?limit=1")
+	if first.Code != http.StatusOK {
+		t.Fatalf("first page status = %d: %s", first.Code, first.Body.String())
+	}
+	for _, want := range []string{
+		`"address":"0x0000000000000000000000000000000000000002"`,
+		`"nextCursor":"0x0000000000000000000000000000000000000002"`,
+		`"total":"2"`,
+	} {
+		if !strings.Contains(first.Body.String(), want) {
+			t.Fatalf("first page does not contain %q: %s", want, first.Body.String())
+		}
+	}
+
+	second := request(handler, http.MethodGet,
+		"/api/v1/positions?limit=1&cursor=0x0000000000000000000000000000000000000002")
+	if second.Code != http.StatusOK {
+		t.Fatalf("second page status = %d: %s", second.Code, second.Body.String())
+	}
+	for _, want := range []string{`"address":"` + common.HexToAddress(testAddress).Hex() + `"`, `"nextCursor":null`} {
+		if !strings.Contains(second.Body.String(), want) {
+			t.Fatalf("second page does not contain %q: %s", want, second.Body.String())
+		}
+	}
+}
+
 func publishedStore(t *testing.T) *memory.Store {
 	t.Helper()
 	store := memory.New(100)
@@ -97,6 +129,7 @@ func publishedStore(t *testing.T) *memory.Store {
 		state.Supplied{User: testAddress, Assets: big.NewInt(50), Shares: big.NewInt(50_000_000)},
 		state.CollateralSupplied{User: testAddress, Assets: big.NewInt(7)},
 		state.Borrowed{User: testAddress, Assets: big.NewInt(8), Shares: big.NewInt(8_000_000)},
+		state.CollateralSupplied{User: "0x0000000000000000000000000000000000000002", Assets: big.NewInt(3)},
 	}, checkpoint); err != nil {
 		t.Fatal(err)
 	}

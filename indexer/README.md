@@ -79,6 +79,8 @@ The API serves:
 - `GET /api/v1/status` — chain head, lag, sync/rebuild flags, published and
   working checkpoints, last error, and last successful synchronization;
 - `GET /api/v1/market` — published market totals; and
+- `GET /api/v1/positions` — published positions in address order with cursor
+  pagination (`limit` defaults to 50 and is capped at 200); and
 - `GET /api/v1/positions/{address}` — published shares, derived asset values,
   and collateral for one Ethereum address.
 
@@ -88,6 +90,7 @@ For example:
 curl http://127.0.0.1:8080/api/v1/status | jq
 curl http://127.0.0.1:8080/api/v1/config | jq
 curl http://127.0.0.1:8080/api/v1/market | jq
+curl 'http://127.0.0.1:8080/api/v1/positions?limit=50' | jq
 curl http://127.0.0.1:8080/api/v1/positions/0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266 | jq
 ```
 

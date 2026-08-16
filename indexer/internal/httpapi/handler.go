@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"math/big"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/synthlike/smolpho/indexer/internal/state"
 	"github.com/synthlike/smolpho/indexer/internal/storage"
 )
 
@@ -46,6 +48,7 @@ func NewHandler(store storage.Store, status *StatusTracker, configuration Market
 	mux.HandleFunc("GET /api/v1/config", a.config)
 	mux.HandleFunc("GET /api/v1/status", a.indexerStatus)
 	mux.HandleFunc("GET /api/v1/market", a.market)
+	mux.HandleFunc("GET /api/v1/positions", a.positions)
 	mux.HandleFunc("GET /api/v1/positions/{address}", a.position)
 	return mux
 }
@@ -88,6 +91,22 @@ type positionResponse struct {
 	BorrowShares string             `json:"borrowShares"`
 	BorrowAssets string             `json:"borrowAssets"`
 	Collateral   string             `json:"collateral"`
+}
+
+type positionSummaryResponse struct {
+	Address      string `json:"address"`
+	SupplyShares string `json:"supplyShares"`
+	SupplyAssets string `json:"supplyAssets"`
+	BorrowShares string `json:"borrowShares"`
+	BorrowAssets string `json:"borrowAssets"`
+	Collateral   string `json:"collateral"`
+}
+
+type positionsResponse struct {
+	Checkpoint checkpointResponse        `json:"checkpoint"`
+	Positions  []positionSummaryResponse `json:"positions"`
+	NextCursor *string                   `json:"nextCursor"`
+	Total      string                    `json:"total"`
 }
 
 func (a *api) health(w http.ResponseWriter, _ *http.Request) {
@@ -155,6 +174,69 @@ func (a *api) market(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (a *api) positions(w http.ResponseWriter, r *http.Request) {
+	limit, ok := positionPageLimit(w, r)
+	if !ok {
+		return
+	}
+
+	snapshot, ok := a.publishedSnapshot(w, r)
+	if !ok {
+		return
+	}
+	keys := make([]string, 0, len(snapshot.State.Positions))
+	for key := range snapshot.State.Positions {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	start := 0
+	if rawCursor := r.URL.Query().Get("cursor"); rawCursor != "" {
+		if !common.IsHexAddress(rawCursor) {
+			writeError(w, http.StatusBadRequest, "cursor must be a valid Ethereum address")
+			return
+		}
+		cursor := strings.ToLower(common.HexToAddress(rawCursor).Hex())
+		start = sort.SearchStrings(keys, cursor)
+		if start < len(keys) && keys[start] == cursor {
+			start++
+		}
+	}
+
+	end := min(start+limit, len(keys))
+	positions := make([]positionSummaryResponse, 0, end-start)
+	for _, key := range keys[start:end] {
+		position := snapshot.State.Positions[key]
+		positions = append(positions, positionSummaryJSON(snapshot, key, position))
+	}
+	var nextCursor *string
+	if end < len(keys) {
+		value := common.HexToAddress(keys[end-1]).Hex()
+		nextCursor = &value
+	}
+	writeJSON(w, http.StatusOK, positionsResponse{
+		Checkpoint: checkpointJSON(snapshot.Checkpoint),
+		Positions:  positions,
+		NextCursor: nextCursor,
+		Total:      strconv.Itoa(len(keys)),
+	})
+}
+
+func positionPageLimit(w http.ResponseWriter, r *http.Request) (int, bool) {
+	const defaultLimit = 50
+	const maximumLimit = 200
+	rawLimit := r.URL.Query().Get("limit")
+	if rawLimit == "" {
+		return defaultLimit, true
+	}
+	limit, err := strconv.Atoi(rawLimit)
+	if err != nil || limit < 1 || limit > maximumLimit {
+		writeError(w, http.StatusBadRequest, "limit must be an integer between 1 and 200")
+		return 0, false
+	}
+	return limit, true
+}
+
 func (a *api) position(w http.ResponseWriter, r *http.Request) {
 	rawAddress := r.PathValue("address")
 	if !common.IsHexAddress(rawAddress) {
@@ -181,6 +263,21 @@ func (a *api) position(w http.ResponseWriter, r *http.Request) {
 		BorrowAssets: decimal(snapshot.State.BorrowAssets(key)),
 		Collateral:   decimal(position.Collateral),
 	})
+}
+
+func positionSummaryJSON(
+	snapshot storage.Snapshot,
+	key string,
+	position *state.Position,
+) positionSummaryResponse {
+	return positionSummaryResponse{
+		Address:      common.HexToAddress(key).Hex(),
+		SupplyShares: decimal(position.SupplyShares),
+		SupplyAssets: decimal(snapshot.State.SupplyAssets(key)),
+		BorrowShares: decimal(position.BorrowShares),
+		BorrowAssets: decimal(snapshot.State.BorrowAssets(key)),
+		Collateral:   decimal(position.Collateral),
+	}
 }
 
 func (a *api) publishedSnapshot(
