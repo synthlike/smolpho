@@ -10,3 +10,8 @@
 /contracts/cache/
 /contracts/out/
 /contracts/broadcast/
+
+# Local indexer databases
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
