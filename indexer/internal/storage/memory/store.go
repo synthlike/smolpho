@@ -3,6 +3,7 @@ package memory
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/synthlike/smolpho/indexer/internal/state"
@@ -11,10 +12,12 @@ import (
 
 // Store guards one reconstructed state and canonical checkpoint in memory.
 type Store struct {
-	mu         sync.RWMutex
-	state      *state.State
-	checkpoint storage.Checkpoint
-	closed     bool
+	mu                sync.RWMutex
+	state             *state.State
+	checkpoint        storage.Checkpoint
+	rebuildState      *state.State
+	rebuildCheckpoint storage.Checkpoint
+	closed            bool
 }
 
 var _ storage.Store = (*Store)(nil)
@@ -33,6 +36,9 @@ func (s *Store) Checkpoint(ctx context.Context) (storage.Checkpoint, error) {
 	if s.closed {
 		return storage.Checkpoint{}, storage.ErrClosed
 	}
+	if s.rebuildState != nil {
+		return s.rebuildCheckpoint, nil
+	}
 	return s.checkpoint, nil
 }
 
@@ -49,10 +55,18 @@ func (s *Store) Commit(
 	if s.closed {
 		return storage.ErrClosed
 	}
-	for _, event := range events {
-		s.state.Apply(event)
+	workingState := s.state
+	if s.rebuildState != nil {
+		workingState = s.rebuildState
 	}
-	s.checkpoint = checkpoint
+	for _, event := range events {
+		workingState.Apply(event)
+	}
+	if s.rebuildState != nil {
+		s.rebuildCheckpoint = checkpoint
+	} else {
+		s.checkpoint = checkpoint
+	}
 	return nil
 }
 
@@ -72,7 +86,46 @@ func (s *Store) Replace(
 	}
 	s.state = clone
 	s.checkpoint = checkpoint
+	s.rebuildState = nil
+	s.rebuildCheckpoint = storage.Checkpoint{}
 	return nil
+}
+
+func (s *Store) BeginRebuild(ctx context.Context, replacement *state.State) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if replacement == nil {
+		return fmt.Errorf("replacement state is nil")
+	}
+	clone := replacement.Clone()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return storage.ErrClosed
+	}
+	s.rebuildState = clone
+	s.rebuildCheckpoint = storage.Checkpoint{}
+	return nil
+}
+
+func (s *Store) PublishRebuild(ctx context.Context) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return false, storage.ErrClosed
+	}
+	if s.rebuildState == nil {
+		return false, nil
+	}
+	s.state = s.rebuildState
+	s.checkpoint = s.rebuildCheckpoint
+	s.rebuildState = nil
+	s.rebuildCheckpoint = storage.Checkpoint{}
+	return true, nil
 }
 
 func (s *Store) Snapshot(ctx context.Context) (storage.Snapshot, error) {

@@ -48,10 +48,20 @@ checkpoint after a restart. Pass `-follow=false` for a one-shot backfill. Use a
 separate database file for each chain and Smolpho deployment; deployment
 identity metadata is not stored in the schema yet.
 
+The SQLite schema is intentionally allowed to break while this is a prototype.
+There are no migrations: after an incompatible schema change, delete the local
+database and let the worker reconstruct it from chain events.
+
+Initial backfills and reorg replays are built in a hidden SQLite generation.
+The last complete generation remains available to readers until replay reaches
+the sampled canonical head, when the worker atomically publishes the rebuilt
+state. Hidden progress also survives a process restart.
+
 ## Chain reorganizations
 
 Every committed range records the canonical ending block hash. Before indexing
 new blocks, the indexer compares that checkpoint with the node's canonical
-header. If they differ, it discards reconstructed state and replays from the
-deployment block. It also checks block hashes before and after each log query
-and retries when the canonical chain changes during a query.
+header. If they differ, it rebuilds reconstructed state from the deployment
+block in a hidden generation and publishes it atomically when complete. It also
+checks block hashes before and after each log query and retries when the
+canonical chain changes during a query.

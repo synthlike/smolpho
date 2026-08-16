@@ -108,6 +108,77 @@ func Run(t *testing.T, factory Factory) {
 		}
 	})
 
+	t.Run("hidden rebuild publication", func(t *testing.T) {
+		store := factory(t, 100)
+		publishedCheckpoint := storage.Checkpoint{
+			Number: 1, Hash: common.HexToHash("0x1111"), Valid: true,
+		}
+		if err := store.Commit(context.Background(), []state.Event{state.Supplied{
+			User: "alice", Assets: big.NewInt(10), Shares: big.NewInt(20),
+		}}, publishedCheckpoint); err != nil {
+			t.Fatal(err)
+		}
+
+		rebuild := state.New(200)
+		if err := store.BeginRebuild(context.Background(), rebuild); err != nil {
+			t.Fatal(err)
+		}
+		rebuild.Positions["alias"] = &state.Position{
+			SupplyShares: big.NewInt(1), BorrowShares: big.NewInt(2), Collateral: big.NewInt(3),
+		}
+		workingCheckpoint := storage.Checkpoint{
+			Number: 2, Hash: common.HexToHash("0x2222"), Valid: true,
+		}
+		if err := store.Commit(context.Background(), []state.Event{state.CollateralSupplied{
+			User: "bob", Assets: big.NewInt(30),
+		}}, workingCheckpoint); err != nil {
+			t.Fatal(err)
+		}
+
+		checkpoint, err := store.Checkpoint(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if checkpoint != workingCheckpoint {
+			t.Fatalf("working checkpoint = %+v, want %+v", checkpoint, workingCheckpoint)
+		}
+		published := mustSnapshot(t, store)
+		if published.Checkpoint != publishedCheckpoint {
+			t.Fatalf("published checkpoint = %+v, want %+v", published.Checkpoint, publishedCheckpoint)
+		}
+		if _, exists := published.State.Positions["bob"]; exists {
+			t.Fatal("snapshot exposed an unpublished rebuild position")
+		}
+
+		publishedRebuild, err := store.PublishRebuild(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !publishedRebuild {
+			t.Fatal("PublishRebuild() reported no publication")
+		}
+		published = mustSnapshot(t, store)
+		if published.Checkpoint != workingCheckpoint {
+			t.Fatalf("published checkpoint = %+v, want %+v", published.Checkpoint, workingCheckpoint)
+		}
+		if _, exists := published.State.Positions["alice"]; exists {
+			t.Fatal("published rebuild retained old state")
+		}
+		if _, exists := published.State.Positions["alias"]; exists {
+			t.Fatal("rebuild retained a mutable replacement alias")
+		}
+		if got := published.State.Positions["bob"].Collateral; got.Cmp(big.NewInt(30)) != 0 {
+			t.Fatalf("bob collateral = %s, want 30", got)
+		}
+		publishedRebuild, err = store.PublishRebuild(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if publishedRebuild {
+			t.Fatal("second PublishRebuild() unexpectedly published")
+		}
+	})
+
 	t.Run("cancelled context", func(t *testing.T) {
 		store := factory(t, 0)
 		ctx, cancel := context.WithCancel(context.Background())
@@ -136,6 +207,12 @@ func Run(t *testing.T, factory Factory) {
 		if _, err = store.Snapshot(ctx); !errors.Is(err, context.Canceled) {
 			t.Fatalf("Snapshot() error = %v, want context.Canceled", err)
 		}
+		if err = store.BeginRebuild(ctx, state.New(0)); !errors.Is(err, context.Canceled) {
+			t.Fatalf("BeginRebuild() error = %v, want context.Canceled", err)
+		}
+		if _, err = store.PublishRebuild(ctx); !errors.Is(err, context.Canceled) {
+			t.Fatalf("PublishRebuild() error = %v, want context.Canceled", err)
+		}
 	})
 
 	t.Run("closed store", func(t *testing.T) {
@@ -145,6 +222,12 @@ func Run(t *testing.T, factory Factory) {
 		}
 		if _, err := store.Snapshot(context.Background()); !errors.Is(err, storage.ErrClosed) {
 			t.Fatalf("Snapshot() error = %v, want ErrClosed", err)
+		}
+		if err := store.BeginRebuild(context.Background(), state.New(0)); !errors.Is(err, storage.ErrClosed) {
+			t.Fatalf("BeginRebuild() error = %v, want ErrClosed", err)
+		}
+		if _, err := store.PublishRebuild(context.Background()); !errors.Is(err, storage.ErrClosed) {
+			t.Fatalf("PublishRebuild() error = %v, want ErrClosed", err)
 		}
 	})
 }

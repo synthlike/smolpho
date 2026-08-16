@@ -205,6 +205,85 @@ func TestSyncRetriesWhenChainChangesDuringQuery(t *testing.T) {
 	assertPositionShares(t, st, "bob", 40)
 }
 
+func TestReorgReplayStaysHiddenUntilAllBatchesSucceed(t *testing.T) {
+	deployment := newHeader(10, 100, 1)
+	oldBlock11 := newHeader(11, 110, 1)
+	oldHead := newHeader(12, 120, 1)
+	chain := &fakeChain{
+		head: 12,
+		headers: map[uint64]*types.Header{
+			10: deployment,
+			11: oldBlock11,
+			12: oldHead,
+		},
+	}
+	store := memory.New(0)
+	oldSource := &fakeEventSource{events: []orderedEvent{
+		supplied(11, 1, oldBlock11, "alice", 10, 20),
+	}}
+	if _, err := syncWithRetry(context.Background(), chain, oldSource, store, 10, 100); err != nil {
+		t.Fatal(err)
+	}
+
+	newBlock11 := newHeader(11, 111, 2)
+	newHead := newHeader(12, 121, 2)
+	chain.headers[11] = newBlock11
+	chain.headers[12] = newHead
+	newSource := &fakeEventSource{events: []orderedEvent{
+		supplied(11, 1, newBlock11, "bob", 30, 40),
+	}}
+	newSource.after = func() {
+		if len(newSource.calls) == 2 {
+			newSource.err = errors.New("second batch failed")
+		}
+	}
+
+	if _, err := syncWithRetry(context.Background(), chain, newSource, store, 10, 2); err == nil {
+		t.Fatal("reorg replay succeeded despite second batch failure")
+	}
+	published, err := store.Snapshot(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if published.Checkpoint.Hash != oldHead.Hash() {
+		t.Fatalf("published checkpoint hash = %s, want old head %s",
+			published.Checkpoint.Hash, oldHead.Hash())
+	}
+	if _, exists := published.State.Positions["bob"]; exists {
+		t.Fatal("failed replay exposed bob's unpublished position")
+	}
+	if got := published.State.Positions["alice"].SupplyShares; got.Cmp(big.NewInt(20)) != 0 {
+		t.Fatalf("published alice shares = %s, want 20", got)
+	}
+	working, err := store.Checkpoint(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if working.Number != 11 || working.Hash != newBlock11.Hash() {
+		t.Fatalf("working checkpoint = %+v, want new block 11", working)
+	}
+
+	newSource.err = nil
+	newSource.after = nil
+	if _, err := syncWithRetry(context.Background(), chain, newSource, store, 10, 2); err != nil {
+		t.Fatal(err)
+	}
+	published, err = store.Snapshot(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if published.Checkpoint.Hash != newHead.Hash() {
+		t.Fatalf("published checkpoint hash = %s, want new head %s",
+			published.Checkpoint.Hash, newHead.Hash())
+	}
+	if _, exists := published.State.Positions["alice"]; exists {
+		t.Fatal("published replay retained orphaned alice position")
+	}
+	if got := published.State.Positions["bob"].SupplyShares; got.Cmp(big.NewInt(40)) != 0 {
+		t.Fatalf("published bob shares = %s, want 40", got)
+	}
+}
+
 func TestCanonicalRangeIsAtomicOnSourceError(t *testing.T) {
 	header := newHeader(10, 100, 1)
 	chain := &fakeChain{head: 10, headers: map[uint64]*types.Header{10: header}}

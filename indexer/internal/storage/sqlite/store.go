@@ -16,9 +16,7 @@ import (
 	"github.com/synthlike/smolpho/indexer/internal/storage"
 )
 
-const schemaVersion = 1
-
-// Store persists one materialized indexer state and its canonical checkpoint.
+// Store persists published and optionally staged materialized projections.
 type Store struct {
 	mu     sync.RWMutex
 	db     *sql.DB
@@ -54,82 +52,8 @@ func Open(ctx context.Context, dataSourceName string, initialTimestamp uint64) (
 	return store, nil
 }
 
-func (s *Store) initialize(ctx context.Context, initialTimestamp uint64) error {
-	if _, err := s.db.ExecContext(ctx, "PRAGMA busy_timeout = 5000"); err != nil {
-		return fmt.Errorf("configure sqlite busy timeout: %w", err)
-	}
-	if _, err := s.db.ExecContext(ctx, "PRAGMA journal_mode = WAL"); err != nil {
-		return fmt.Errorf("configure sqlite journal mode: %w", err)
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("begin schema transaction: %w", err)
-	}
-	defer tx.Rollback()
-
-	statements := []string{
-		`CREATE TABLE IF NOT EXISTS storage_metadata (
-			id INTEGER PRIMARY KEY CHECK (id = 1),
-			schema_version INTEGER NOT NULL,
-			checkpoint_number TEXT NOT NULL,
-			checkpoint_hash BLOB NOT NULL,
-			checkpoint_valid INTEGER NOT NULL CHECK (checkpoint_valid IN (0, 1))
-		)`,
-		`CREATE TABLE IF NOT EXISTS market (
-			id INTEGER PRIMARY KEY CHECK (id = 1),
-			total_supply_assets TEXT NOT NULL,
-			total_supply_shares TEXT NOT NULL,
-			total_borrow_assets TEXT NOT NULL,
-			total_borrow_shares TEXT NOT NULL,
-			last_update TEXT NOT NULL
-		)`,
-		`CREATE TABLE IF NOT EXISTS positions (
-			user TEXT PRIMARY KEY,
-			supply_shares TEXT NOT NULL,
-			borrow_shares TEXT NOT NULL,
-			collateral TEXT NOT NULL
-		)`,
-	}
-	for _, statement := range statements {
-		if _, err := tx.ExecContext(ctx, statement); err != nil {
-			return fmt.Errorf("create sqlite schema: %w", err)
-		}
-	}
-
-	zeroHash := common.Hash{}
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO storage_metadata (
-			id, schema_version, checkpoint_number, checkpoint_hash, checkpoint_valid
-		) VALUES (1, ?, '0', ?, 0)
-		ON CONFLICT(id) DO NOTHING`, schemaVersion, zeroHash[:]); err != nil {
-		return fmt.Errorf("initialize storage metadata: %w", err)
-	}
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO market (
-			id, total_supply_assets, total_supply_shares,
-			total_borrow_assets, total_borrow_shares, last_update
-		) VALUES (1, '0', '0', '0', '0', ?)
-		ON CONFLICT(id) DO NOTHING`, strconv.FormatUint(initialTimestamp, 10)); err != nil {
-		return fmt.Errorf("initialize market: %w", err)
-	}
-
-	var version int
-	if err := tx.QueryRowContext(ctx,
-		"SELECT schema_version FROM storage_metadata WHERE id = 1",
-	).Scan(&version); err != nil {
-		return fmt.Errorf("read sqlite schema version: %w", err)
-	}
-	if version != schemaVersion {
-		return fmt.Errorf("unsupported sqlite schema version %d (want %d)", version, schemaVersion)
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit schema transaction: %w", err)
-	}
-	return nil
-}
-
-// Checkpoint returns the last fully committed canonical block.
+// Checkpoint returns progress for the hidden rebuild when one exists, or the
+// published generation otherwise.
 func (s *Store) Checkpoint(ctx context.Context) (storage.Checkpoint, error) {
 	if err := ctx.Err(); err != nil {
 		return storage.Checkpoint{}, err
@@ -139,14 +63,28 @@ func (s *Store) Checkpoint(ctx context.Context) (storage.Checkpoint, error) {
 	if s.closed {
 		return storage.Checkpoint{}, storage.ErrClosed
 	}
-	checkpoint, err := readCheckpoint(ctx, s.db)
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return storage.Checkpoint{}, fmt.Errorf("begin checkpoint transaction: %w", err)
+	}
+	defer tx.Rollback()
+	selection, err := readGenerationSelection(ctx, tx)
+	if err != nil {
+		return storage.Checkpoint{}, fmt.Errorf("read generation selection: %w", err)
+	}
+	checkpoint, err := readCheckpoint(ctx, tx, selection.working())
 	if err != nil {
 		return storage.Checkpoint{}, fmt.Errorf("read checkpoint: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return storage.Checkpoint{}, fmt.Errorf("finish checkpoint transaction: %w", err)
 	}
 	return checkpoint, nil
 }
 
-// Commit applies events and advances the checkpoint in one transaction.
+// Commit applies events to the hidden rebuild when present, or directly to
+// the published generation during normal forward indexing.
 func (s *Store) Commit(
 	ctx context.Context,
 	events []state.Event,
@@ -166,15 +104,19 @@ func (s *Store) Commit(
 		return fmt.Errorf("begin commit transaction: %w", err)
 	}
 	defer tx.Rollback()
-
-	current, err := readState(ctx, tx)
+	selection, err := readGenerationSelection(ctx, tx)
+	if err != nil {
+		return fmt.Errorf("read generation selection: %w", err)
+	}
+	generation := selection.working()
+	current, err := readState(ctx, tx, generation)
 	if err != nil {
 		return fmt.Errorf("read state for commit: %w", err)
 	}
 	for _, event := range events {
 		current.Apply(event)
 	}
-	if err := writeSnapshot(ctx, tx, current, checkpoint); err != nil {
+	if err := writeSnapshot(ctx, tx, generation, current, checkpoint); err != nil {
 		return fmt.Errorf("write committed state: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -183,7 +125,8 @@ func (s *Store) Commit(
 	return nil
 }
 
-// Replace swaps all reconstructed state and checkpoint in one transaction.
+// Replace immediately replaces the published projection and abandons any
+// hidden rebuild. Indexing replays use BeginRebuild and PublishRebuild instead.
 func (s *Store) Replace(
 	ctx context.Context,
 	replacement *state.State,
@@ -206,8 +149,22 @@ func (s *Store) Replace(
 		return fmt.Errorf("begin replace transaction: %w", err)
 	}
 	defer tx.Rollback()
-	if err := writeSnapshot(ctx, tx, replacement, checkpoint); err != nil {
-		return fmt.Errorf("write replacement state: %w", err)
+	selection, err := readGenerationSelection(ctx, tx)
+	if err != nil {
+		return fmt.Errorf("read generation selection: %w", err)
+	}
+	newGeneration := selection.Next
+	if err := createGeneration(ctx, tx, newGeneration, replacement, checkpoint); err != nil {
+		return fmt.Errorf("create replacement generation: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE storage_metadata
+		SET active_generation = ?, staging_generation = NULL, next_generation = ?
+		WHERE id = 1`, newGeneration, newGeneration+1); err != nil {
+		return fmt.Errorf("select replacement generation: %w", err)
+	}
+	if err := deleteOtherGenerations(ctx, tx, newGeneration); err != nil {
+		return fmt.Errorf("delete replaced generations: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit replacement transaction: %w", err)
@@ -215,7 +172,95 @@ func (s *Store) Replace(
 	return nil
 }
 
-// Snapshot reads state and checkpoint from one consistent transaction.
+// BeginRebuild creates a hidden working generation. Starting another rebuild
+// atomically discards any previous unpublished generation.
+func (s *Store) BeginRebuild(ctx context.Context, replacement *state.State) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if replacement == nil {
+		return fmt.Errorf("replacement state is nil")
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.closed {
+		return storage.ErrClosed
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin rebuild transaction: %w", err)
+	}
+	defer tx.Rollback()
+	selection, err := readGenerationSelection(ctx, tx)
+	if err != nil {
+		return fmt.Errorf("read generation selection: %w", err)
+	}
+	newGeneration := selection.Next
+	if err := createGeneration(
+		ctx, tx, newGeneration, replacement, storage.Checkpoint{},
+	); err != nil {
+		return fmt.Errorf("create rebuild generation: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE storage_metadata
+		SET staging_generation = ?, next_generation = ?
+		WHERE id = 1`, newGeneration, newGeneration+1); err != nil {
+		return fmt.Errorf("select rebuild generation: %w", err)
+	}
+	if selection.Staging.Valid {
+		if err := deleteGeneration(ctx, tx, selection.Staging.Int64); err != nil {
+			return fmt.Errorf("delete abandoned rebuild generation: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit rebuild transaction: %w", err)
+	}
+	return nil
+}
+
+// PublishRebuild atomically switches readers to the completed hidden
+// generation and removes the previously published generation.
+func (s *Store) PublishRebuild(ctx context.Context) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.closed {
+		return false, storage.ErrClosed
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return false, fmt.Errorf("begin publish transaction: %w", err)
+	}
+	defer tx.Rollback()
+	selection, err := readGenerationSelection(ctx, tx)
+	if err != nil {
+		return false, fmt.Errorf("read generation selection: %w", err)
+	}
+	if !selection.Staging.Valid {
+		return false, nil
+	}
+	newActive := selection.Staging.Int64
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE storage_metadata
+		SET active_generation = ?, staging_generation = NULL
+		WHERE id = 1`, newActive); err != nil {
+		return false, fmt.Errorf("publish rebuild generation: %w", err)
+	}
+	if err := deleteOtherGenerations(ctx, tx, newActive); err != nil {
+		return false, fmt.Errorf("delete superseded generation: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return false, fmt.Errorf("commit publish transaction: %w", err)
+	}
+	return true, nil
+}
+
+// Snapshot reads only the published generation from one consistent
+// transaction. Hidden rebuild progress is not visible.
 func (s *Store) Snapshot(ctx context.Context) (storage.Snapshot, error) {
 	if err := ctx.Err(); err != nil {
 		return storage.Snapshot{}, err
@@ -231,11 +276,15 @@ func (s *Store) Snapshot(ctx context.Context) (storage.Snapshot, error) {
 		return storage.Snapshot{}, fmt.Errorf("begin snapshot transaction: %w", err)
 	}
 	defer tx.Rollback()
-	current, err := readState(ctx, tx)
+	selection, err := readGenerationSelection(ctx, tx)
+	if err != nil {
+		return storage.Snapshot{}, fmt.Errorf("read generation selection: %w", err)
+	}
+	current, err := readState(ctx, tx, selection.Active)
 	if err != nil {
 		return storage.Snapshot{}, fmt.Errorf("read snapshot state: %w", err)
 	}
-	checkpoint, err := readCheckpoint(ctx, tx)
+	checkpoint, err := readCheckpoint(ctx, tx, selection.Active)
 	if err != nil {
 		return storage.Snapshot{}, fmt.Errorf("read snapshot checkpoint: %w", err)
 	}
@@ -256,11 +305,37 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
+type generationSelection struct {
+	Active  int64
+	Staging sql.NullInt64
+	Next    int64
+}
+
+func (s generationSelection) working() int64 {
+	if s.Staging.Valid {
+		return s.Staging.Int64
+	}
+	return s.Active
+}
+
 type queryer interface {
 	QueryRowContext(context.Context, string, ...any) *sql.Row
 }
 
-func readCheckpoint(ctx context.Context, db queryer) (storage.Checkpoint, error) {
+func readGenerationSelection(ctx context.Context, db queryer) (generationSelection, error) {
+	var selection generationSelection
+	err := db.QueryRowContext(ctx, `
+		SELECT active_generation, staging_generation, next_generation
+		FROM storage_metadata WHERE id = 1`,
+	).Scan(&selection.Active, &selection.Staging, &selection.Next)
+	return selection, err
+}
+
+func readCheckpoint(
+	ctx context.Context,
+	db queryer,
+	generation int64,
+) (storage.Checkpoint, error) {
 	var (
 		numberText string
 		hashBytes  []byte
@@ -268,7 +343,7 @@ func readCheckpoint(ctx context.Context, db queryer) (storage.Checkpoint, error)
 	)
 	if err := db.QueryRowContext(ctx, `
 		SELECT checkpoint_number, checkpoint_hash, checkpoint_valid
-		FROM storage_metadata WHERE id = 1`,
+		FROM generations WHERE id = ?`, generation,
 	).Scan(&numberText, &hashBytes, &valid); err != nil {
 		return storage.Checkpoint{}, err
 	}
@@ -291,12 +366,12 @@ type stateQueryer interface {
 	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
 }
 
-func readState(ctx context.Context, db stateQueryer) (*state.State, error) {
+func readState(ctx context.Context, db stateQueryer, generation int64) (*state.State, error) {
 	var marketValues [5]string
 	if err := db.QueryRowContext(ctx, `
 		SELECT total_supply_assets, total_supply_shares, total_borrow_assets,
 		       total_borrow_shares, last_update
-		FROM market WHERE id = 1`,
+		FROM market WHERE generation = ?`, generation,
 	).Scan(
 		&marketValues[0], &marketValues[1], &marketValues[2],
 		&marketValues[3], &marketValues[4],
@@ -319,7 +394,8 @@ func readState(ctx context.Context, db stateQueryer) (*state.State, error) {
 	}
 
 	rows, err := db.QueryContext(ctx, `
-		SELECT user, supply_shares, borrow_shares, collateral FROM positions`,
+		SELECT user, supply_shares, borrow_shares, collateral
+		FROM positions WHERE generation = ?`, generation,
 	)
 	if err != nil {
 		return nil, err
@@ -359,9 +435,34 @@ func parseBigInts(values []string) ([]*big.Int, error) {
 	return parsed, nil
 }
 
+func createGeneration(
+	ctx context.Context,
+	tx *sql.Tx,
+	generation int64,
+	current *state.State,
+	checkpoint storage.Checkpoint,
+) error {
+	zeroHash := common.Hash{}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO generations (
+			id, checkpoint_number, checkpoint_hash, checkpoint_valid
+		) VALUES (?, '0', ?, 0)`, generation, zeroHash[:]); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO market (
+			generation, total_supply_assets, total_supply_shares,
+			total_borrow_assets, total_borrow_shares, last_update
+		) VALUES (?, '0', '0', '0', '0', '0')`, generation); err != nil {
+		return err
+	}
+	return writeSnapshot(ctx, tx, generation, current, checkpoint)
+}
+
 func writeSnapshot(
 	ctx context.Context,
 	tx *sql.Tx,
+	generation int64,
 	current *state.State,
 	checkpoint storage.Checkpoint,
 ) error {
@@ -379,19 +480,22 @@ func writeSnapshot(
 		UPDATE market SET
 			total_supply_assets = ?, total_supply_shares = ?,
 			total_borrow_assets = ?, total_borrow_shares = ?, last_update = ?
-		WHERE id = 1`,
+		WHERE generation = ?`,
 		market.TotalSupplyAssets.String(), market.TotalSupplyShares.String(),
 		market.TotalBorrowAssets.String(), market.TotalBorrowShares.String(),
-		market.LastUpdate.String(),
+		market.LastUpdate.String(), generation,
 	); err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, "DELETE FROM positions"); err != nil {
+	if _, err := tx.ExecContext(ctx,
+		"DELETE FROM positions WHERE generation = ?", generation,
+	); err != nil {
 		return err
 	}
 	statement, err := tx.PrepareContext(ctx, `
-		INSERT INTO positions (user, supply_shares, borrow_shares, collateral)
-		VALUES (?, ?, ?, ?)`)
+		INSERT INTO positions (
+			generation, user, supply_shares, borrow_shares, collateral
+		) VALUES (?, ?, ?, ?, ?)`)
 	if err != nil {
 		return err
 	}
@@ -404,7 +508,7 @@ func writeSnapshot(
 			return fmt.Errorf("position %q: %w", user, err)
 		}
 		if _, err := statement.ExecContext(
-			ctx, user, position.SupplyShares.String(),
+			ctx, generation, user, position.SupplyShares.String(),
 			position.BorrowShares.String(), position.Collateral.String(),
 		); err != nil {
 			return err
@@ -412,14 +516,24 @@ func writeSnapshot(
 	}
 	hash := checkpoint.Hash
 	if _, err := tx.ExecContext(ctx, `
-		UPDATE storage_metadata SET
+		UPDATE generations SET
 			checkpoint_number = ?, checkpoint_hash = ?, checkpoint_valid = ?
-		WHERE id = 1`,
-		strconv.FormatUint(checkpoint.Number, 10), hash[:], checkpoint.Valid,
+		WHERE id = ?`,
+		strconv.FormatUint(checkpoint.Number, 10), hash[:], checkpoint.Valid, generation,
 	); err != nil {
 		return err
 	}
 	return nil
+}
+
+func deleteGeneration(ctx context.Context, tx *sql.Tx, generation int64) error {
+	_, err := tx.ExecContext(ctx, "DELETE FROM generations WHERE id = ?", generation)
+	return err
+}
+
+func deleteOtherGenerations(ctx context.Context, tx *sql.Tx, generation int64) error {
+	_, err := tx.ExecContext(ctx, "DELETE FROM generations WHERE id <> ?", generation)
+	return err
 }
 
 func requireBigInts(values ...*big.Int) error {

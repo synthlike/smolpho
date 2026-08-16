@@ -31,7 +31,8 @@ type Snapshot struct {
 
 // Store persists reconstructed state and canonical indexing progress.
 type Store interface {
-	// Checkpoint returns the last fully-applied canonical block, if any.
+	// Checkpoint returns indexing progress for the working projection. During
+	// a rebuild this is the hidden rebuild checkpoint, not the published one.
 	Checkpoint(context.Context) (Checkpoint, error)
 
 	// Commit atomically applies an ordered event batch and advances the
@@ -42,7 +43,17 @@ type Store interface {
 	// Implementations must not retain mutable aliases to replacement.
 	Replace(context.Context, *state.State, Checkpoint) error
 
-	// Snapshot returns a deep, point-in-time copy of state and checkpoint.
+	// BeginRebuild starts a hidden replacement projection with an invalid
+	// checkpoint. Commit advances this working projection while Snapshot keeps
+	// returning the last published projection.
+	BeginRebuild(context.Context, *state.State) error
+
+	// PublishRebuild atomically makes a completed hidden rebuild visible. The
+	// bool reports whether a rebuild was published; it is false for a no-op.
+	PublishRebuild(context.Context) (bool, error)
+
+	// Snapshot returns a deep, point-in-time copy of the published state and
+	// checkpoint. Hidden rebuild progress is never exposed.
 	Snapshot(context.Context) (Snapshot, error)
 
 	Close() error

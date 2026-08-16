@@ -71,8 +71,11 @@ func syncOnce(
 	}
 	if result.Head < deploymentBlock {
 		if checkpoint.Valid {
-			if err := st.Replace(ctx, state.New(0), storage.Checkpoint{}); err != nil {
+			if err := st.BeginRebuild(ctx, state.New(0)); err != nil {
 				return result, fmt.Errorf("reset state before deployment: %w", err)
+			}
+			if _, err := st.PublishRebuild(ctx); err != nil {
+				return result, fmt.Errorf("publish reset before deployment: %w", err)
 			}
 			result.Changed = true
 			result.Replayed = true
@@ -104,7 +107,7 @@ func syncOnce(
 	}
 
 	if !checkpoint.Valid {
-		if err := st.Replace(ctx, state.New(deploymentHeader.Time), storage.Checkpoint{}); err != nil {
+		if err := st.BeginRebuild(ctx, state.New(deploymentHeader.Time)); err != nil {
 			return result, fmt.Errorf("initialize state: %w", err)
 		}
 	}
@@ -112,6 +115,11 @@ func syncOnce(
 	start := deploymentBlock
 	if checkpoint.Valid {
 		if checkpoint.Number == ^uint64(0) {
+			published, err := st.PublishRebuild(ctx)
+			if err != nil {
+				return result, fmt.Errorf("publish rebuilt state: %w", err)
+			}
+			result.Changed = result.Changed || published
 			return result, nil
 		}
 		start = checkpoint.Number + 1
@@ -132,6 +140,11 @@ func syncOnce(
 		}
 		start = end + 1
 	}
+	published, err := st.PublishRebuild(ctx)
+	if err != nil {
+		return result, fmt.Errorf("publish rebuilt state: %w", err)
+	}
+	result.Changed = result.Changed || published
 	return result, nil
 }
 
