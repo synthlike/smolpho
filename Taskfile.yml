@@ -8,12 +8,15 @@ vars:
   ARTIFACT: contracts/out/Smolpho.sol/Smolpho.json
   ABI: indexer/internal/bindings/smolpho.abi.json
   BINDINGS: indexer/internal/bindings/smolpho.go
+  TOOLS_DIR: "{{.ROOT_DIR}}/.tools/bin"
+  ABIGEN: "{{.TOOLS_DIR}}/abigen"
 
-  # Deterministic local demo configuration. The private key is Anvil's public,
-  # test-only account-zero key and must never be used on a real network.
+  # Deterministic local demo configuration. The mnemonic and private key are
+  # Anvil's public test-only credentials and must never be used on a real network.
   DEMO_ANVIL_HOST: 127.0.0.1
   DEMO_ANVIL_PORT: 8545
   DEMO_ANVIL_RPC: "http://{{.DEMO_ANVIL_HOST}}:{{.DEMO_ANVIL_PORT}}"
+  DEMO_MNEMONIC: "test test test test test test test test test test test junk"
   DEMO_USER: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
   DEMO_PRIVATE_KEY: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
   DEMO_LOAN_TOKEN: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
@@ -26,6 +29,20 @@ vars:
   DEMO_API_DATABASE: "smolpho-indexer.sqlite"
 
 tasks:
+  install:
+    desc: Download project dependencies, including the pinned abigen tool
+    cmds:
+      - task: tools:install
+      - task: indexer:install
+      - task: web:install
+
+  tools:install:
+    desc: Install pinned development tools inside the repository
+    env:
+      GOBIN: "{{.TOOLS_DIR}}"
+    cmds:
+      - go install github.com/ethereum/go-ethereum/cmd/abigen@v1.17.5
+
   build:
     desc: Build contracts, refresh ABI + bindings, and build the indexer
     cmds:
@@ -33,6 +50,12 @@ tasks:
       - task: indexer:abi
       - task: indexer:bindings
       - task: indexer:build
+
+  test:
+    desc: Run all test suites
+    cmds:
+      - task: contracts:test
+      - task: indexer:test
 
   contracts:build:
     desc: Compile production Solidity contracts with Foundry
@@ -51,16 +74,49 @@ tasks:
     cmds:
       - jq '.abi' {{.ARTIFACT}} > {{.ABI}}
 
+  indexer:install:
+    desc: Download the Go indexer dependencies
+    dir: "{{.INDEXER_DIR}}"
+    cmds:
+      - go mod download
+
   indexer:bindings:
     desc: Generate Go contract bindings from the ABI
+    preconditions:
+      - sh: test -x "{{.ABIGEN}}"
+        msg: "abigen is not installed; run 'task install' first"
     cmds:
-      - abigen --abi {{.ABI}} --pkg bindings --type Smolpho --out {{.BINDINGS}}
+      - "{{.ABIGEN}} --abi {{.ABI}} --pkg bindings --type Smolpho --out {{.BINDINGS}}"
 
   indexer:build:
     desc: Build the Go indexer
     dir: "{{.INDEXER_DIR}}"
     cmds:
       - go build ./...
+
+  indexer:test:
+    desc: Run the Go indexer test suite
+    dir: "{{.INDEXER_DIR}}"
+    cmds:
+      - go test ./...
+
+  web:install:
+    desc: Install the locked web application dependencies
+    dir: web
+    cmds:
+      - npm ci
+
+  web:dev:
+    desc: Start the Smolpho Lens development server
+    dir: web
+    cmds:
+      - npm run dev
+
+  web:build:
+    desc: Type-check and build the Smolpho Lens frontend
+    dir: web
+    cmds:
+      - npm run build
 
   demo:anvil:
     desc: Start a fresh deterministic Anvil node for the manual indexer demo
@@ -71,7 +127,7 @@ tasks:
         --port {{.DEMO_ANVIL_PORT}}
         --chain-id 31337
         --quiet
-        --mnemonic "test test test test test test test test test test test junk"
+        --mnemonic "{{.DEMO_MNEMONIC}}"
 
   demo:deploy:
     desc: Deploy the deterministic demo contracts to a fresh Anvil node
@@ -162,7 +218,7 @@ tasks:
         -follow
 
   demo:scenario:
-    desc: Send a paced supply, collateral, and withdrawal scenario to Anvil
+    desc: Create one supplier and four borrower/collateral positions on Anvil
     cmds:
       - echo "Minting 1,000 loan tokens"
       - >-
@@ -192,3 +248,31 @@ tasks:
         cast send --quiet --rpc-url {{.DEMO_ANVIL_RPC}} --private-key {{.DEMO_PRIVATE_KEY}}
         {{.DEMO_SMOLPHO}} "withdraw(uint256)" 50000000000000000000000000
       - sleep 1
+      - |
+        mnemonic="{{.DEMO_MNEMONIC}}"
+        for fixture in \
+          "1:20000000000000000000:8000000000000000000" \
+          "2:30000000000000000000:12000000000000000000" \
+          "3:10000000000000000000:4000000000000000000" \
+          "4:5000000000000000000:0"
+        do
+          account_index="${fixture%%:*}"
+          remainder="${fixture#*:}"
+          collateral="${remainder%%:*}"
+          borrow="${remainder#*:}"
+          private_key="$(cast wallet private-key "$mnemonic" "$account_index")"
+          user="$(cast wallet address --private-key "$private_key")"
+
+          echo "Creating position for Anvil account $account_index ($user)"
+          cast send --quiet --rpc-url {{.DEMO_ANVIL_RPC}} --private-key "$private_key" \
+            {{.DEMO_COLLATERAL_TOKEN}} "mint(address,uint256)" "$user" "$collateral"
+          cast send --quiet --rpc-url {{.DEMO_ANVIL_RPC}} --private-key "$private_key" \
+            {{.DEMO_COLLATERAL_TOKEN}} "approve(address,uint256)" {{.DEMO_SMOLPHO}} "$collateral"
+          cast send --quiet --rpc-url {{.DEMO_ANVIL_RPC}} --private-key "$private_key" \
+            {{.DEMO_SMOLPHO}} "supplyCollateral(uint256)" "$collateral"
+          if [ "$borrow" != "0" ]; then
+            cast send --quiet --rpc-url {{.DEMO_ANVIL_RPC}} --private-key "$private_key" \
+              {{.DEMO_SMOLPHO}} "borrow(uint256)" "$borrow"
+          fi
+          sleep 1
+        done
