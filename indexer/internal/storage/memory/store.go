@@ -42,6 +42,26 @@ func (s *Store) Checkpoint(ctx context.Context) (storage.Checkpoint, error) {
 	return s.checkpoint, nil
 }
 
+func (s *Store) ProjectionStatus(ctx context.Context) (storage.ProjectionStatus, error) {
+	if err := ctx.Err(); err != nil {
+		return storage.ProjectionStatus{}, err
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.closed {
+		return storage.ProjectionStatus{}, storage.ErrClosed
+	}
+	status := storage.ProjectionStatus{
+		Published: s.checkpoint,
+		Working:   s.checkpoint,
+	}
+	if s.rebuildState != nil {
+		status.Working = s.rebuildCheckpoint
+		status.Rebuilding = true
+	}
+	return status, nil
+}
+
 func (s *Store) Commit(
 	ctx context.Context,
 	events []state.Event,

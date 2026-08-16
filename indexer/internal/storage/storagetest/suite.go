@@ -142,6 +142,15 @@ func Run(t *testing.T, factory Factory) {
 		if checkpoint != workingCheckpoint {
 			t.Fatalf("working checkpoint = %+v, want %+v", checkpoint, workingCheckpoint)
 		}
+		projectionStatus, err := store.ProjectionStatus(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !projectionStatus.Rebuilding ||
+			projectionStatus.Published != publishedCheckpoint ||
+			projectionStatus.Working != workingCheckpoint {
+			t.Fatalf("projection status = %+v, want published and hidden checkpoints", projectionStatus)
+		}
 		published := mustSnapshot(t, store)
 		if published.Checkpoint != publishedCheckpoint {
 			t.Fatalf("published checkpoint = %+v, want %+v", published.Checkpoint, publishedCheckpoint)
@@ -176,6 +185,15 @@ func Run(t *testing.T, factory Factory) {
 		}
 		if publishedRebuild {
 			t.Fatal("second PublishRebuild() unexpectedly published")
+		}
+		projectionStatus, err = store.ProjectionStatus(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if projectionStatus.Rebuilding ||
+			projectionStatus.Published != workingCheckpoint ||
+			projectionStatus.Working != workingCheckpoint {
+			t.Fatalf("projection status after publication = %+v", projectionStatus)
 		}
 	})
 
@@ -213,6 +231,9 @@ func Run(t *testing.T, factory Factory) {
 		if _, err = store.PublishRebuild(ctx); !errors.Is(err, context.Canceled) {
 			t.Fatalf("PublishRebuild() error = %v, want context.Canceled", err)
 		}
+		if _, err = store.ProjectionStatus(ctx); !errors.Is(err, context.Canceled) {
+			t.Fatalf("ProjectionStatus() error = %v, want context.Canceled", err)
+		}
 	})
 
 	t.Run("closed store", func(t *testing.T) {
@@ -228,6 +249,9 @@ func Run(t *testing.T, factory Factory) {
 		}
 		if _, err := store.PublishRebuild(context.Background()); !errors.Is(err, storage.ErrClosed) {
 			t.Fatalf("PublishRebuild() error = %v, want ErrClosed", err)
+		}
+		if _, err := store.ProjectionStatus(context.Background()); !errors.Is(err, storage.ErrClosed) {
+			t.Fatalf("ProjectionStatus() error = %v, want ErrClosed", err)
 		}
 	})
 }

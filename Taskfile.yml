@@ -21,6 +21,8 @@ vars:
   DEMO_ORACLE: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
   DEMO_SMOLPHO: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
   DEMO_SMOLPHO_DEPLOYMENT_BLOCK: 4
+  DEMO_API_LISTEN: "127.0.0.1:8080"
+  DEMO_API_DATABASE: "smolpho-indexer.sqlite"
 
 tasks:
   build:
@@ -134,6 +136,26 @@ tasks:
         -rpc {{.DEMO_ANVIL_RPC}}
         -contract {{.DEMO_SMOLPHO}}
         -deployment-block {{.DEMO_SMOLPHO_DEPLOYMENT_BLOCK}}
+        -interval 250ms
+        -follow
+
+  demo:api:
+    desc: Follow the deterministic Anvil deployment and serve the HTTP API
+    dir: "{{.INDEXER_DIR}}"
+    cmds:
+      - |
+        code="$(cast code --rpc-url {{.DEMO_ANVIL_RPC}} {{.DEMO_SMOLPHO}})"
+        if [ "$code" = "0x" ]; then
+          echo "Smolpho is not deployed; run demo:deploy first"
+          exit 1
+        fi
+      - >-
+        go run ./cmd/indexer-api
+        -rpc {{.DEMO_ANVIL_RPC}}
+        -contract {{.DEMO_SMOLPHO}}
+        -deployment-block {{.DEMO_SMOLPHO_DEPLOYMENT_BLOCK}}
+        -database {{.DEMO_API_DATABASE}}
+        -listen {{.DEMO_API_LISTEN}}
         -interval 250ms
         -follow
 

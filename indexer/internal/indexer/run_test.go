@@ -61,3 +61,29 @@ func TestRunRequiresStorageBeforeDial(t *testing.T) {
 		t.Fatalf("Run() error = %v, want missing storage error", err)
 	}
 }
+
+func TestSyncStatusNotifications(t *testing.T) {
+	var updates []SyncStatus
+	dependencies := Dependencies{
+		HandleSyncStatus: func(status SyncStatus) {
+			updates = append(updates, status)
+		},
+	}
+	notifySyncStarted(dependencies)
+	wantErr := context.DeadlineExceeded
+	notifySyncFinished(dependencies, syncResult{
+		Head: 12, HeadKnown: true, Changed: true, Replayed: true,
+	}, wantErr)
+
+	if len(updates) != 2 {
+		t.Fatalf("received %d updates, want 2", len(updates))
+	}
+	if !updates[0].Syncing {
+		t.Fatalf("start update = %+v, want syncing", updates[0])
+	}
+	finished := updates[1]
+	if finished.Syncing || finished.Head != 12 || !finished.HeadKnown ||
+		!finished.Changed || !finished.Replayed || finished.Err != wantErr {
+		t.Fatalf("finished update = %+v", finished)
+	}
+}

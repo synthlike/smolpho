@@ -24,10 +24,11 @@ type chainReader interface {
 }
 
 type syncResult struct {
-	Head     uint64
-	Changed  bool
-	Replayed bool
-	Pending  bool
+	Head      uint64
+	HeadKnown bool
+	Changed   bool
+	Replayed  bool
+	Pending   bool
 }
 
 func syncWithRetry(
@@ -64,7 +65,7 @@ func syncOnce(
 	if err != nil {
 		return syncResult{}, fmt.Errorf("get chain head: %w", err)
 	}
-	result := syncResult{Head: head.Number.Uint64()}
+	result := syncResult{Head: head.Number.Uint64(), HeadKnown: true}
 	checkpoint, err := st.Checkpoint(ctx)
 	if err != nil {
 		return result, fmt.Errorf("read checkpoint: %w", err)

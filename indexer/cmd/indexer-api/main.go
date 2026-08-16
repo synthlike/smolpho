@@ -1,5 +1,4 @@
-// Command indexer-api durably reconstructs a Smolpho deployment for the API
-// service. HTTP endpoints are added in the next implementation slice.
+// Command indexer-api durably reconstructs and serves a Smolpho deployment.
 package main
 
 import (
@@ -18,6 +17,7 @@ func main() {
 	contract := flag.String("contract", "", "Smolpho contract address (required)")
 	deploymentBlock := flag.Uint64("deployment-block", 0, "Smolpho deployment block (required)")
 	database := flag.String("database", "smolpho-indexer.sqlite", "SQLite database path")
+	listen := flag.String("listen", "127.0.0.1:8080", "HTTP listen address")
 	follow := flag.Bool("follow", true, "keep polling for new blocks after backfill")
 	interval := flag.Duration("interval", 2*time.Second, "poll interval when following")
 	batchSize := flag.Uint64("batch-size", 2_000, "maximum blocks per log query")
@@ -43,6 +43,7 @@ func main() {
 			BatchSize:       *batchSize,
 		},
 		Database: *database,
+		Listen:   *listen,
 	})
 	if err != nil {
 		log.Fatal(err)

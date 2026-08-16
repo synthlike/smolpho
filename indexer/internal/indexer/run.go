@@ -32,12 +32,29 @@ type Logger interface {
 // The supplied snapshot is isolated from subsequent storage mutations.
 type SnapshotHandler func(context.Context, storage.Snapshot) error
 
+// SyncStatus describes one synchronization attempt. An update with Syncing
+// true is emitted before the attempt; the following update contains its
+// result. HeadKnown is false when the attempt failed before reading chain head.
+type SyncStatus struct {
+	Syncing   bool
+	Head      uint64
+	HeadKnown bool
+	Changed   bool
+	Replayed  bool
+	Pending   bool
+	Err       error
+}
+
+// SyncStatusHandler observes synchronization lifecycle without affecting it.
+type SyncStatusHandler func(SyncStatus)
+
 // Dependencies are process-owned services used by the shared indexing engine.
 // Run does not close Store; the command that constructs it owns its lifecycle.
 type Dependencies struct {
-	Store          storage.Store
-	Logger         Logger
-	HandleSnapshot SnapshotHandler
+	Store            storage.Store
+	Logger           Logger
+	HandleSnapshot   SnapshotHandler
+	HandleSyncStatus SyncStatusHandler
 }
 
 // Validate checks configuration before any RPC connection is opened.
@@ -80,9 +97,11 @@ func Run(ctx context.Context, config Config, dependencies Dependencies) error {
 	}
 
 	source := &ethereumEventSource{filterer: filterer}
+	notifySyncStarted(dependencies)
 	result, err := syncWithRetry(
 		ctx, client, source, dependencies.Store, deploymentBlock, config.BatchSize,
 	)
+	notifySyncFinished(dependencies, result, err)
 	if err != nil {
 		return fmt.Errorf("backfill: %w", err)
 	}
@@ -119,9 +138,11 @@ func follow(
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
+			notifySyncStarted(dependencies)
 			result, err := syncWithRetry(
 				ctx, chain, source, dependencies.Store, deploymentBlock, config.BatchSize,
 			)
+			notifySyncFinished(dependencies, result, err)
 			if err != nil {
 				logf(dependencies.Logger, "sync: %v", err)
 				continue
@@ -138,6 +159,26 @@ func follow(
 			}
 		}
 	}
+}
+
+func notifySyncStarted(dependencies Dependencies) {
+	if dependencies.HandleSyncStatus != nil {
+		dependencies.HandleSyncStatus(SyncStatus{Syncing: true})
+	}
+}
+
+func notifySyncFinished(dependencies Dependencies, result syncResult, err error) {
+	if dependencies.HandleSyncStatus == nil {
+		return
+	}
+	dependencies.HandleSyncStatus(SyncStatus{
+		Head:      result.Head,
+		HeadKnown: result.HeadKnown,
+		Changed:   result.Changed,
+		Replayed:  result.Replayed,
+		Pending:   result.Pending,
+		Err:       err,
+	})
 }
 
 func handleSnapshot(ctx context.Context, dependencies Dependencies) error {

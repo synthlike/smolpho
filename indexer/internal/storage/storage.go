@@ -29,11 +29,23 @@ type Snapshot struct {
 	Checkpoint Checkpoint
 }
 
+// ProjectionStatus identifies the published and working projections from one
+// point in time. During normal indexing the checkpoints are the same; during
+// a rebuild Working belongs to the hidden replacement projection.
+type ProjectionStatus struct {
+	Published  Checkpoint
+	Working    Checkpoint
+	Rebuilding bool
+}
+
 // Store persists reconstructed state and canonical indexing progress.
 type Store interface {
 	// Checkpoint returns indexing progress for the working projection. During
 	// a rebuild this is the hidden rebuild checkpoint, not the published one.
 	Checkpoint(context.Context) (Checkpoint, error)
+
+	// ProjectionStatus returns consistent publication and rebuild metadata.
+	ProjectionStatus(context.Context) (ProjectionStatus, error)
 
 	// Commit atomically applies an ordered event batch and advances the
 	// checkpoint. Neither change may become visible without the other.

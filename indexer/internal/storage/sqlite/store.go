@@ -83,6 +83,48 @@ func (s *Store) Checkpoint(ctx context.Context) (storage.Checkpoint, error) {
 	return checkpoint, nil
 }
 
+// ProjectionStatus reads published and working checkpoints from one database
+// snapshot so API status cannot straddle a generation publication.
+func (s *Store) ProjectionStatus(ctx context.Context) (storage.ProjectionStatus, error) {
+	if err := ctx.Err(); err != nil {
+		return storage.ProjectionStatus{}, err
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.closed {
+		return storage.ProjectionStatus{}, storage.ErrClosed
+	}
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return storage.ProjectionStatus{}, fmt.Errorf("begin projection status transaction: %w", err)
+	}
+	defer tx.Rollback()
+	selection, err := readGenerationSelection(ctx, tx)
+	if err != nil {
+		return storage.ProjectionStatus{}, fmt.Errorf("read generation selection: %w", err)
+	}
+	published, err := readCheckpoint(ctx, tx, selection.Active)
+	if err != nil {
+		return storage.ProjectionStatus{}, fmt.Errorf("read published checkpoint: %w", err)
+	}
+	working := published
+	if selection.Staging.Valid {
+		working, err = readCheckpoint(ctx, tx, selection.Staging.Int64)
+		if err != nil {
+			return storage.ProjectionStatus{}, fmt.Errorf("read working checkpoint: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return storage.ProjectionStatus{}, fmt.Errorf("finish projection status transaction: %w", err)
+	}
+	return storage.ProjectionStatus{
+		Published:  published,
+		Working:    working,
+		Rebuilding: selection.Staging.Valid,
+	}, nil
+}
+
 // Commit applies events to the hidden rebuild when present, or directly to
 // the published generation during normal forward indexing.
 func (s *Store) Commit(

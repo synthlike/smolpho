@@ -27,7 +27,8 @@ Smolpho events. It processes logs in canonical order, commits state in batches,
 tracks block-hash checkpoints, and replays from the deployment block after a
 chain reorganization. 
 `indexer-cli` holds state in memory and prints it;
-`indexer-api` persists the same projection in SQLite; it will be served via HTTP API.
+`indexer-api` persists the same projection in SQLite and exposes read-only
+status, market, and position HTTP endpoints.
 
 ### Project tooling
 
@@ -75,6 +76,9 @@ Terminal 2 — deploy the contracts and start the indexer:
 task demo:deploy
 task demo:indexer
 ```
+
+To run the SQLite-backed HTTP API instead of the printing CLI, replace the last
+command with `task demo:api`.
 
 Terminal 3 — run the scenario:
 
