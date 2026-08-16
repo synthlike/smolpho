@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IPriceOracle} from "./interfaces/IPriceOracle.sol";
+import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {SharesMath} from "./libraries/SharesMath.sol";
 
 contract Smolpho {
@@ -34,12 +35,24 @@ contract Smolpho {
     Market public market;
     mapping(address => Position) public position;
 
+    uint256 private locked = 1;
+
     event InterestAccrued(uint256 elapsed, uint256 interest);
+    event Supplied(address indexed user, uint256 assets, uint256 shares);
 
     error ZeroAddress();
+    error ZeroAssets();
+    error Reentrancy();
     error SameToken();
     error InvalidLltv();
     error InvalidLiquidationIncentive();
+
+    modifier nonReentrant() {
+        if (locked != 1) revert Reentrancy();
+        locked = 2;
+        _;
+        locked = 1;
+    }
 
     constructor(
         IERC20 loanToken_,
@@ -79,6 +92,25 @@ contract Smolpho {
         market.lastUpdate = block.timestamp;
 
         emit InterestAccrued(elapsed, interest);
+    }
+
+    function supply(uint256 assets) external nonReentrant returns (uint256 shares) {
+        if (assets == 0) revert ZeroAssets();
+
+        accrueInterest();
+        shares = SharesMath.toSharesDown(assets, market.totalSupplyAssets, market.totalSupplyShares);
+
+        position[msg.sender].supplyShares += shares;
+        market.totalSupplyShares += shares;
+        market.totalSupplyAssets += assets;
+
+        SafeTransferLib.safeTransferFrom(loanToken, msg.sender, address(this), assets);
+
+        emit Supplied(msg.sender, assets, shares);
+    }
+
+    function supplyAssets(address user) external view returns (uint256) {
+        return SharesMath.toAssetsDown(position[user].supplyShares, market.totalSupplyAssets, market.totalSupplyShares);
     }
 
     function previewSupply(uint256 assets) external view returns (uint256) {
