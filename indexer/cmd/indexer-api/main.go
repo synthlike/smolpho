@@ -1,4 +1,5 @@
-// Command indexer reconstructs a Smolpho deployment from its Ethereum logs.
+// Command indexer-api durably reconstructs a Smolpho deployment for the API
+// service. HTTP endpoints are added in the next implementation slice.
 package main
 
 import (
@@ -16,7 +17,8 @@ func main() {
 	rpc := flag.String("rpc", "http://localhost:8545", "Ethereum RPC endpoint")
 	contract := flag.String("contract", "", "Smolpho contract address (required)")
 	deploymentBlock := flag.Uint64("deployment-block", 0, "Smolpho deployment block (required)")
-	follow := flag.Bool("follow", false, "keep polling for new blocks after backfill")
+	database := flag.String("database", "smolpho-indexer.sqlite", "SQLite database path")
+	follow := flag.Bool("follow", true, "keep polling for new blocks after backfill")
 	interval := flag.Duration("interval", 2*time.Second, "poll interval when following")
 	batchSize := flag.Uint64("batch-size", 2_000, "maximum blocks per log query")
 	flag.Parse()
@@ -31,13 +33,16 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	err := smolphoindexer.Run(ctx, smolphoindexer.Config{
-		RPC:             *rpc,
-		Contract:        *contract,
-		DeploymentBlock: deploymentBlockValue,
-		Follow:          *follow,
-		Interval:        *interval,
-		BatchSize:       *batchSize,
+	err := run(ctx, apiConfig{
+		Indexer: smolphoindexer.Config{
+			RPC:             *rpc,
+			Contract:        *contract,
+			DeploymentBlock: deploymentBlockValue,
+			Follow:          *follow,
+			Interval:        *interval,
+			BatchSize:       *batchSize,
+		},
+		Database: *database,
 	})
 	if err != nil {
 		log.Fatal(err)

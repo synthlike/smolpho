@@ -3,6 +3,7 @@ package indexer
 import (
 	"bytes"
 	"context"
+	"errors"
 	"math/big"
 	"strings"
 	"testing"
@@ -41,6 +42,24 @@ func TestFormatInt(t *testing.T) {
 	}
 }
 
+type failingWriter struct{}
+
+func (failingWriter) Write([]byte) (int, error) {
+	return 0, errors.New("write failed")
+}
+
+func TestTextSnapshotHandlerReturnsWriterError(t *testing.T) {
+	store := memory.New(0)
+	snapshot, err := store.Snapshot(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = TextSnapshotHandler(failingWriter{})(context.Background(), snapshot)
+	if err == nil || !strings.Contains(err.Error(), "write failed") {
+		t.Fatalf("handler error = %v, want write failure", err)
+	}
+}
+
 func TestPrintStateIncludesBorrowPosition(t *testing.T) {
 	store := memory.New(100)
 	if err := store.Commit(context.Background(), []state.Event{state.Borrowed{
@@ -53,8 +72,12 @@ func TestPrintStateIncludesBorrowPosition(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	snapshot, err := store.Snapshot(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
 	var output bytes.Buffer
-	if err := printState(context.Background(), &output, store); err != nil {
+	if err := TextSnapshotHandler(&output)(context.Background(), snapshot); err != nil {
 		t.Fatal(err)
 	}
 	want := "borrowShares=1_000_000_000  borrowAssets=1_000"

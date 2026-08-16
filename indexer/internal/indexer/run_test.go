@@ -1,6 +1,7 @@
 package indexer
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -44,5 +45,19 @@ func TestConfigValidate(t *testing.T) {
 				t.Fatalf("Validate() error = %v, want substring %q", err, test.wantErrPart)
 			}
 		})
+	}
+}
+
+func TestRunRequiresStorageBeforeDial(t *testing.T) {
+	deploymentBlock := uint64(1)
+	err := Run(context.Background(), Config{
+		RPC:             "http://not-used.invalid",
+		Contract:        "0x0000000000000000000000000000000000000001",
+		DeploymentBlock: &deploymentBlock,
+		Interval:        time.Second,
+		BatchSize:       100,
+	}, Dependencies{})
+	if err == nil || !strings.Contains(err.Error(), "storage") {
+		t.Fatalf("Run() error = %v, want missing storage error", err)
 	}
 }

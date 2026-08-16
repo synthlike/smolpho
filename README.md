@@ -20,12 +20,14 @@ market per `Smolpho` deployment. The current implementation includes:
 The full intended protocol behavior and accounting rules are described in the
 [Smolpho specification](SMOLPHO-SPEC.md).
 
-### Go indexer CLI
+### Indexer
 
 The [indexer](indexer/README.md) reconstructs market and user state from
 Smolpho events. It processes logs in canonical order, commits state in batches,
 tracks block-hash checkpoints, and replays from the deployment block after a
-chain reorganization. State is currently held in memory.
+chain reorganization. 
+`indexer-cli` holds state in memory and prints it;
+`indexer-api` persists the same projection in SQLite; it will be served via HTTP API.
 
 ### Project tooling
 

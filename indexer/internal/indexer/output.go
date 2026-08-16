@@ -1,6 +1,7 @@
 package indexer
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -18,27 +19,36 @@ func addressKey(address common.Address) string {
 	return strings.ToLower(address.Hex())
 }
 
-// printState renders a snapshot of the reconstructed market and positions.
-func printState(ctx context.Context, output io.Writer, st storage.Store) error {
-	snapshot, err := st.Snapshot(ctx)
-	if err != nil {
-		return err
+// TextSnapshotHandler returns a handler that renders reconstructed state as
+// human-readable text. It is used by indexer-cli; service processes may use a
+// different handler or none at all.
+func TextSnapshotHandler(output io.Writer) SnapshotHandler {
+	return func(ctx context.Context, snapshot storage.Snapshot) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		return writeSnapshot(output, snapshot)
 	}
+}
+
+func writeSnapshot(output io.Writer, snapshot storage.Snapshot) error {
+	var rendered bytes.Buffer
 	s := snapshot.State
 	checkpoint := snapshot.Checkpoint
 	m := s.Market
-	fmt.Fprintf(output, "\n=== market @ block %d (%s) ===\n", checkpoint.Number, checkpoint.Hash.Hex())
-	fmt.Fprintf(output, "  totalSupplyAssets: %s\n", formatInt(m.TotalSupplyAssets))
-	fmt.Fprintf(output, "  totalSupplyShares: %s\n", formatInt(m.TotalSupplyShares))
-	fmt.Fprintf(output, "  totalBorrowAssets: %s\n", formatInt(m.TotalBorrowAssets))
-	fmt.Fprintf(output, "  totalBorrowShares: %s\n", formatInt(m.TotalBorrowShares))
-	fmt.Fprintf(output, "  lastUpdate: %s\n", formatInt(m.LastUpdate))
-	fmt.Fprintf(output, "  supply share price: %s\n", supplySharePrice(m))
+	fmt.Fprintf(&rendered, "\n=== market @ block %d (%s) ===\n", checkpoint.Number, checkpoint.Hash.Hex())
+	fmt.Fprintf(&rendered, "  totalSupplyAssets: %s\n", formatInt(m.TotalSupplyAssets))
+	fmt.Fprintf(&rendered, "  totalSupplyShares: %s\n", formatInt(m.TotalSupplyShares))
+	fmt.Fprintf(&rendered, "  totalBorrowAssets: %s\n", formatInt(m.TotalBorrowAssets))
+	fmt.Fprintf(&rendered, "  totalBorrowShares: %s\n", formatInt(m.TotalBorrowShares))
+	fmt.Fprintf(&rendered, "  lastUpdate: %s\n", formatInt(m.LastUpdate))
+	fmt.Fprintf(&rendered, "  supply share price: %s\n", supplySharePrice(m))
 	if len(s.Positions) == 0 {
-		fmt.Fprintln(output, "  (no positions)")
-		return nil
+		fmt.Fprintln(&rendered, "  (no positions)")
+		_, err := io.Copy(output, &rendered)
+		return err
 	}
-	fmt.Fprintln(output, "  positions:")
+	fmt.Fprintln(&rendered, "  positions:")
 	users := make([]string, 0, len(s.Positions))
 	for user := range s.Positions {
 		users = append(users, user)
@@ -46,7 +56,7 @@ func printState(ctx context.Context, output io.Writer, st storage.Store) error {
 	slices.Sort(users)
 	for _, user := range users {
 		p := s.Positions[user]
-		fmt.Fprintf(output, "    %s  supplyShares=%s  supplyAssets=%s  borrowShares=%s  borrowAssets=%s  collateral=%s\n",
+		fmt.Fprintf(&rendered, "    %s  supplyShares=%s  supplyAssets=%s  borrowShares=%s  borrowAssets=%s  collateral=%s\n",
 			user,
 			formatInt(p.SupplyShares),
 			formatInt(s.SupplyAssets(user)),
@@ -55,7 +65,8 @@ func printState(ctx context.Context, output io.Writer, st storage.Store) error {
 			formatInt(p.Collateral),
 		)
 	}
-	return nil
+	_, err := io.Copy(output, &rendered)
+	return err
 }
 
 func formatInt(value *big.Int) string {

@@ -130,7 +130,7 @@ tasks:
           exit 1
         fi
       - >-
-        go run ./cmd/indexer
+        go run ./cmd/indexer-cli
         -rpc {{.DEMO_ANVIL_RPC}}
         -contract {{.DEMO_SMOLPHO}}
         -deployment-block {{.DEMO_SMOLPHO_DEPLOYMENT_BLOCK}}

@@ -2,16 +2,21 @@
 
 The indexer reconstructs Smolpho's market and user positions from contract
 events, including supply, collateral, borrowing, repayment, liquidation, and
-bad-debt accounting. Its state and checkpoints are held in memory; restarting
-the process replays the chain from the deployment block.
+bad-debt accounting. The shared indexing engine is used by two applications:
+
+- `indexer-cli` keeps state in memory and prints snapshots for demos and manual
+  inspection;
+- `indexer-api` persists state and checkpoints in SQLite for the future HTTP
+  API. It currently runs only the durable indexing worker; it does not expose
+  HTTP endpoints yet.
 
 See the [indexer design notes](../INDEXING.md) for its design history, event
 pipeline, reorganization handling, atomicity model, and storage trade-offs.
 
-## Usage
+## CLI usage
 
 ```sh
-go run ./cmd/indexer \
+go run ./cmd/indexer-cli \
   -rpc http://localhost:8545 \
   -contract 0x5FbDB2315678afecb367f032d93F642f64180aa3 \
   -deployment-block 1 \
@@ -28,10 +33,25 @@ follow mode it polls every `-interval` (default `2s`). If the deployment block
 is in the future, follow mode waits for it; a one-shot invocation reports an
 error.
 
+## API worker usage
+
+```sh
+go run ./cmd/indexer-api \
+  -rpc http://localhost:8545 \
+  -contract 0x5FbDB2315678afecb367f032d93F642f64180aa3 \
+  -deployment-block 1 \
+  -database smolpho-indexer.sqlite
+```
+
+The API worker follows by default and resumes from its durable SQLite
+checkpoint after a restart. Pass `-follow=false` for a one-shot backfill. Use a
+separate database file for each chain and Smolpho deployment; deployment
+identity metadata is not stored in the schema yet.
+
 ## Chain reorganizations
 
 Every committed range records the canonical ending block hash. Before indexing
 new blocks, the indexer compares that checkpoint with the node's canonical
-header. If they differ, it discards its in-memory state and replays from the
+header. If they differ, it discards reconstructed state and replays from the
 deployment block. It also checks block hashes before and after each log query
 and retries when the canonical chain changes during a query.
